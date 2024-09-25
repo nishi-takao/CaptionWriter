@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta content="width=device-width" name="viewport" />
+  <meta http-equiv="Content-Security-Policy"
+	content="default-src 'self'; img-src 'self' data:" />
+  <title>Caption Writer</title>
+  <link href="./css/main.css" rel="stylesheet" />
+  <script src='./js/render.js'></script>
+</head>
+
+<body>
+<p id='cwd' tabindex='-1'></p>
+
+<ul id='filelist' tabindex='0'>
+<li class='no-image' title=''></li>
+</ul>
+
+<p id='image-area'>
+<image id='target-image'
+      width='0'
+      height='0'
+      data-original-width='0'
+      data-original-height='0'
+      data-path=''
+      data-idx='-1' />
+<span id='loading-image' class="fa-solid fa-spinner"></span>
+</p>
+
+<div id='caption-area'>
+<textarea id='caption' tabindex='0'>
+</textarea>
+</div>
+
+<p id='list-navi'>
+<button id='btn-list-open' class="fa-regular fa-folder-open"
+ title="Select Folder" tabindex='-1'></button>
+<span class='pad'>&nbsp;</span>
+<button id='btn-list-rescan' class="fa-solid fa-rotate"
+ title='Rescan' tabindex='-1'></button>
+</p>
+
+<p id='edit-navi'>
+<button id='btn-edit-commit' class="fa-regular fa-circle-dot"
+ title="Commit" tabindex='-1'></button>
+<span class='pad'>&nbsp;</span>
+<button id='btn-edit-paste' class="fa-regular fa-copy"
+ title="Paste the Last Commit" tabindex='-1'></button>
+<span class='pad'>&nbsp;</span>
+<button id='btn-edit-undo' class="fa-solid fa-rotate-left"
+ title="Undo" tabindex='-1'></button>
+<button id='btn-edit-redo' class="fa-solid fa-rotate-right"
+ title="Redo" tabindex='-1'></button>
+<button id='btn-edit-discard' class="fa-solid fa-xmark"
+ title="Discard Changes" tabindex='-1'></button>
+<span class='pad'>&nbsp;</span>
+<button id='btn-edit-dispose' class="fa-regular fa-trash-can"
+ title="Dispose the existing caption" tabindex='-1'></button>
+</p>
+</body>
+
+</html>
