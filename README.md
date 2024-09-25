@@ -4,6 +4,10 @@ NISHI, Takao <nishi.t.es@osaka-u.ac.jp>
 ## What's this?
 "Caption Writer" is a tool to easily create captioned image datasets for training VL models.
 
+![Screen Shot]((./screenshot.jpg)
+
+It's a GUI tool, but almost all operations can be done using just the keyboard.
+
 ## Installation
 ### Dependency
 * [Node.js](https://nodejs.org/)
