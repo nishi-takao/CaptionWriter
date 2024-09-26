@@ -28,8 +28,8 @@ $ cd Path/where/CaptionWriter/downloaded
 $ npm install
 
 # copy Robot fonts
-$ cp node_modules/roboto-fontface//fonts/roboto/Roboto-Regular.woff2 ./fonts/
-$ cp node_modules/roboto-fontface//fonts/roboto/Roboto-Bold.woff2 ./fonts/
+$ cp node_modules/roboto-fontface/fonts/roboto/Roboto-Regular.woff2 ./fonts/
+$ cp node_modules/roboto-fontface/fonts/roboto/Roboto-Bold.woff2 ./fonts/
 
 # copy FontAwesome fonts
 $ cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.* ./fonts/
@@ -38,6 +38,9 @@ $ cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.* ./fonts/
 # copy FontAwesome style file
 $ cp node_modules/@fortawesome/fontawesome-free/css/fontawesome.min.css ./css/
 ```
+Yes, I know that steps 3.-5. shold be defined in build script.
+It's a hassle right now, so I'll do it when I feel like it :p
+
 
 ## Running
 ```

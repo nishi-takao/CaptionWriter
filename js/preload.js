@@ -43,6 +43,9 @@ contextBridge.exposeInMainWorld(
 	    paste:(anno)=>{
 		return ipcRenderer.invoke('paste');
 	    },
+	    get_config:()=>{
+		return ipcRenderer.invoke('get-config');
+	    }
 	}
     }
 );

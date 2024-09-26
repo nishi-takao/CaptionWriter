@@ -10,13 +10,18 @@ const Ipc=Electron.ipcMain;
 const Dialog=Electron.dialog
 const Clipboard=Electron.clipboard;
 const Path=require('node:path');
+const FS=require('fs');
 const ImageList=require('./js/imagelist');
 
 const WINDOW_MIN_WIDTH=800;
 const WINDOW_MIN_HEIGHT=720;
 
+const CONFIG_FILE='.config';
+const LAST_STAT_FILE='.last-stat';
+
 let config={
-    DEBUG: true,
+    DEBUG: false,
+    ignore_last_status: false,
     window:{
 	x:null,
 	y:null,
@@ -26,14 +31,42 @@ let config={
     cwd:'.'
 }
 
+try{
+    let c=JSON.parse(FS.readFileSync(CONFIG_FILE,'utf8'));
+    Object.assign(config,c);
+}
+catch(e){}
+
+
+if(!config.ignore_last_status){
+    try{
+	let s=JSON.parse(FS.readFileSync(LAST_STAT_FILE,'utf8'));
+	Object.assign(config,s);
+    }
+    catch(e){}
+}
+
+
 let win=null;
 let imagelist=new ImageList();
 
+if(config.cwd){
+    try{
+	imagelist.scan(config.cwd);
+    }
+    catch(e){
+	config.cwd='.'
+	console.log(e);
+    }
+}
 
 App.on("ready", () => {
     win=new BrowserWindow({
+	x:config.window.x,
+	y:config.window.y,
 	width:config.window.width,
 	height:config.window.height,
+	backgroundColor:'#2e2c29',
 	useContentSize:true,
 	webPreferences:{
 	    sandbox:false,
@@ -50,6 +83,18 @@ App.on("ready", () => {
     
     win.setMinimumSize(WINDOW_MIN_WIDTH,WINDOW_MIN_HEIGHT);
     win.loadURL('file://'+__dirname+'/main.html');
+    win.on('close',()=>{
+	let j=JSON.stringify({
+	    window:win.getBounds(),
+	    cwd:imagelist.cwd
+	},null,2);
+	try{
+	    FS.writeFileSync(LAST_STAT_FILE,j);
+	}
+	catch(e){
+	    console.log(e);
+	}
+    });
     win.on("closed",()=>{
 	win=null;
     });
@@ -75,7 +120,7 @@ Ipc.handle(
 		{
 		    title:'Select Directory',
 		    defaultPath:default_path,
-		    properties:['openDirectory']
+		    properties:['openDirectory','showHiddenFiles']
 		}
 	    );
 	}
@@ -220,5 +265,11 @@ Ipc.handle(
     'paste',
     (event,arg)=>{
 	return win.webContents.paste();
+    }
+);
+Ipc.handle(
+    'get-config',
+    (event)=>{
+	return config
     }
 );

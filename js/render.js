@@ -19,6 +19,7 @@ function escapeHTML(str)
 
 function Director()
 {
+    this._config={};
     this._lock_render='lock-render';
     
     this.cwd=null;
@@ -171,18 +172,10 @@ Director.prototype.cmd_edit_copy_anno=function()
 	return;
 
     let anno=this.element.caption.value;
-    this._last_commit_anno=anno;
+    if(!anno)
+	return;
 
-    let cls=this.element.btn.edit_paste.getAttribute('class')
-    cls=cls.replaceAll('fa-regular','fa-solid');
-    this.element.btn.edit_paste.setAttribute('class',cls)
-    
-    API.copy_anno(anno).then(
-	(r)=>{},
-	(e)=>{
-	    console.log(e);
-	}
-    );
+    this._copy_anno_(anno);
 }
 
 Director.prototype.cmd_edit_clear_copied_anno=function()
@@ -332,12 +325,14 @@ Director.prototype._add_listeners=function()
    this.element.filelist.addEventListener(
 	'blur',
        (event)=>{
-	   if(!event.relatedTarget)
+	   if((!event.relatedTarget)||
+	      (event.relatedTarget==this.element.caption &&
+	       !this._current_image))
 	       this.element.filelist.focus();
        }
    );
 
-
+    
 
     
     //
@@ -428,8 +423,10 @@ Director.prototype._add_listeners=function()
 		    this.cmd_dir_open();
 		break;
 	    case 'r':
-		if(event.ctrlKey)
+		if(event.ctrlKey){
+		    event.preventDefault();
 		    this.cmd_rescan();
+		}
 		break;
 	    case 'F5':
 		this.cmd_rescan();
@@ -725,13 +722,13 @@ Director.prototype._show_image_=async function(idx,obj,keep_focus)
 }
 Director.prototype._show_anno_=async function(anno)
 {
-   await navigator.locks.request(
-       this._lock_render,
-       (lock)=>{
-	   this._set_anno(anno);
-	   this._unset_loading();
-       }
-   );
+    await navigator.locks.request(
+	this._lock_render,
+	(lock)=>{
+	    this._set_anno(anno);
+	    this._unset_loading();
+	}
+    );
     this.element.caption.focus();
 
 }
@@ -873,6 +870,7 @@ Director.prototype._do_commit=function()
 	API.write_anno(path,anno).then(
  	    (r)=>{
 		if(r)
+		    this._copy_anno_(anno);
 		    this._set_commited_();
 	    },
 	    (e)=>{
@@ -917,16 +915,14 @@ Director.prototype._do_paste_=async function()
 		(r)=>{
 		    this.element.caption.focus();
 		    API.paste();
+		    this._set_anno_changed();
 		},
 		(e)=>{
 		    console.log(e);
 		}
 	    );
-	    
-	    this._set_anno_changed();
 	}
     );
-    
 }
 
 Director.prototype._do_dispose=function()
@@ -975,13 +971,47 @@ Director.prototype._unset_loading=function()
     this.element.loading_img.style.display='none';
 }
 
+Director.prototype._copy_anno_=async function(anno)
+{
+    await navigator.locks.request(
+	this._lock_render,
+	(lock)=>{
+	    this._last_commit_anno=anno;
+	    
+	    let cls=this.element.btn.edit_paste.getAttribute('class')
+	    cls=cls.replaceAll('fa-regular','fa-solid');
+	    this.element.btn.edit_paste.setAttribute('class',cls);
+	}
+    );
+    
+    API.copy_anno(anno).then(
+	(r)=>{},
+	(e)=>{
+	    console.log(e);
+	}
+    );
+}
 
-window.onload=function(){
+Director.prototype._set_config=function(c)
+{
+    if(this._config)
+	Object.assign(this._config,c);
+    else
+	this._config=c;
+}
+
+window.onload=function(event){
     document.director=new Director();
 
     API.on_start_loading(
 	document.director._set_loading_.bind(document.director)
     );
-    
+    API.get_config().then((c)=>{
+	document.director._set_config(c);
+    });
+
     document.director.cmd_dir_open();
 };
+window.onbeforeunload=function(event){
+    document.director._do_commit();
+}
