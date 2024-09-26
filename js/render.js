@@ -59,7 +59,7 @@ function Director()
 	this.element.btn.edit_undo,
 	this.element.btn.edit_redo,
 	this.element.btn.edit_discard,
-	//this.element.btn.dispose
+	this.element.btn.edit_dispose
     ];
 
     // size caches
@@ -352,7 +352,7 @@ Director.prototype._add_listeners=function()
     this.element.caption.addEventListener(
 	'blur',
 	(event)=>{
-	    if(!(event.relatedTarget in this._edit_buttons)){
+	    if(!this._edit_buttons.includes(event.relatedTarget)){
 		this._do_commit();
 		this._set_edit_btn_inactive();
 		if(!event.relatedTarget)
@@ -825,8 +825,12 @@ Director.prototype._set_edit_btn_active=function()
 }    
 Director.prototype._set_edit_btn_inactive=function()
 {
-    this._edit_buttons.forEach((obj)=>{
-	this._set_btn_inactive(obj);
+    // reject dispose button
+    this._edit_buttons.filter(
+	(x)=>x!=this.element.btn.edit_dispose
+    ).forEach((obj)=>{
+	if(obj!=this.element.btn.edit_dispose)
+	    this._set_btn_inactive(obj);
     });
 } 
 
