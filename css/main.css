@@ -207,13 +207,14 @@ body:before{
     left:calc(50% - 100px);
     top:calc(50% - 100px);
     color:white;
-    text-shadow:3px 5px #202020;
+    text-shadow:3px 5px 3px #202020;
     opacity:0.65;
     animation-name:spin;
     animation-duration:3s;
     animation-iteration-count:infinite;
     animation-timing-function:linear;
     /*animation-timing-function:ease-in-out;*/
+    z-index:1;
 }
 @keyframes spin{
   25%{
@@ -331,18 +332,20 @@ button:hover{
     height:100%;
     margin:0;
     padding:0;
-    background-color:#ffffff37;
+    background-color:#ffffff00;
+    backdrop-filter:blur(8px);
 }
 #lock:before{
     position:absolute;
     content: '[Ctrl-Shift-l] to unlock';
     font-family:Roboto;
-    font-size:32pt;
+    font-weight:bold;
+    font-size:36pt;
     color:black;
     text-shadow:5px 5px 12px white,
 		-5px 5px 12px white,
 		5px -5px 12px white,
 		-5px -5px 12px white;
-    left:calc(50% - 3 * 32pt);
+    left:calc(50% - 3 * 36pt);
     top:calc(25% + 150px);
 }
