@@ -332,20 +332,28 @@ button:hover{
     height:100%;
     margin:0;
     padding:0;
+    overflow:clip;
     background-color:#ffffff00;
     backdrop-filter:blur(8px);
 }
-#lock:before{
+#lock-message{
     position:absolute;
-    content: '[Ctrl-Shift-l] to unlock';
+    display:inline-block;
+    overflow:clip;
+    margin:0;
+    padding:0;
+    text-align:center;
     font-family:Roboto;
     font-weight:bold;
     font-size:36pt;
-    color:black;
-    text-shadow:5px 5px 12px white,
-		-5px 5px 12px white,
-		5px -5px 12px white,
-		-5px -5px 12px white;
-    left:calc(50% - 3 * 36pt);
-    top:calc(25% + 150px);
+    color:white;
+    text-shadow:5px 5px 12px black,
+		-5px 5px 12px black,
+		5px -5px 12px black,
+		-5px -5px 12px black;
+    width:calc(100% - 182px);
+    height:2em;
+    line-height:2em;
+    left:182px;
+    top:calc((50% - 52px)/2 + 125px + 1em);
 }

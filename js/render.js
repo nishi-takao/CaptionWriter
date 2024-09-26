@@ -16,9 +16,11 @@ function escapeHTML(str)
 	.replace(/`/g, '&#x60;');
 }
 
-function Director()
+function Director(config={})
 {
     this._config={};
+    this._set_config(config);
+    
     this._lock_render='lock-render';
     
     this.cwd=null;
@@ -420,6 +422,9 @@ Director.prototype._add_listeners=function()
 	    }
 	}
     );
+    document.getElementById('lock-message').textContent=
+	'[Ctrl-Shift-l] to unlock';
+
      
     //
     // global short-cut keys
@@ -1064,15 +1069,13 @@ Director.prototype._set_config=function(c)
 	this._config=c;
 }
 
-window.onload=function(event){
-    document.director=new Director();
-
+window.onload=async function(event){
+    await API.get_config().then((c)=>{
+	document.director=new Director(c);
+    });
     API.on_start_loading(
 	document.director._set_loading_.bind(document.director)
     );
-    API.get_config().then((c)=>{
-	document.director._set_config(c);
-    });
 
     document.director.cmd_dir_open();
 };
