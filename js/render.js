@@ -1,7 +1,6 @@
 //
 //
 //
-//const ProductName=window.exposed.productName;
 const API=window.extra.api;
 
 const MAX_DIRNAME_LEN=64;
@@ -285,9 +284,11 @@ Director.prototype._add_listeners=function()
 	(event)=>{
 	    switch(event.key){
 	    case 'ArrowUp':
+		event.preventDefault();
 		this.cmd_list_up();
 		break;
 	    case 'ArrowDown':
+		event.preventDefault();
 		this.cmd_list_down();
 		break;
 	    case 'ArrowRight':
@@ -296,6 +297,7 @@ Director.prototype._add_listeners=function()
 		this.cmd_edit_start();
 		break;
 	    case 'ArrowLeft':
+		event.preventDefault();
 		if(event.ctrlKey && event.shiftKey)
 		    this.cmd_edit_clear_copied_anno();
 		else
@@ -784,7 +786,7 @@ Director.prototype._set_list_select=function(idx)
     cls=(cls+' selected').trim();
     el.setAttribute('class',cls);
     this._list_cursor_pos=parseInt(idx);
-    
+    el.scrollIntoViewIfNeeded(false); // depends on WebKit
     return el;
 }
 Director.prototype._unset_list_select=function(idx)
@@ -908,6 +910,11 @@ Director.prototype._set_commited_=async function(disposed)
 Director.prototype._do_paste_=async function()
 {
     let anno=this._last_commit_anno;
+
+    //
+    // To enable the undo feature of textarea,
+    // paste the value from the clipboard instead of rewriting it directly
+    //
     await navigator.locks.request(
 	this._lock_render,
 	(lock)=>{
