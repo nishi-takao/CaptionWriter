@@ -38,6 +38,7 @@ function Director()
     this.element.src_img=document.getElementById('target-image');
     this.element.loading_img=document.getElementById('loading-image');
     this.element.caption=document.getElementById('caption');
+    this.element.lock=document.getElementById('lock');
     
     //
     // buttons
@@ -353,6 +354,11 @@ Director.prototype._add_listeners=function()
 	'blur',
 	(event)=>{
 	    if(!this._edit_buttons.includes(event.relatedTarget)){
+		if(event.relatedTarget==this.element.lock){
+		    this.element.lock.dataset.relatedTarget=
+			this.element.caption.id;
+		    return;
+		}
 		this._do_commit();
 		this._set_edit_btn_inactive();
 		if(!event.relatedTarget)
@@ -398,6 +404,24 @@ Director.prototype._add_listeners=function()
     
 
     //
+    // lock screen
+    //
+    this.element.lock.addEventListener(
+	'keypress',
+	(event)=>{
+	    event.preventDefault();
+	    event.stopPropagation();
+	    switch(event.key){
+	    case 'L':
+		if(event.ctrlKey){
+		    this._unset_lock();
+		}
+		break;
+	    }
+	}
+    );
+     
+    //
     // global short-cut keys
     //
     window.addEventListener(
@@ -427,11 +451,18 @@ Director.prototype._add_listeners=function()
 	    case 'r':
 		if(event.ctrlKey){
 		    event.preventDefault();
+		    event.stopPropagation();
 		    this.cmd_rescan();
 		}
 		break;
 	    case 'F5':
 		this.cmd_rescan();
+		break;
+	    case 'L':
+		if(event.ctrlKey){
+		    event.preventDefault();
+		    this._set_lock();
+		}
 		break;
 	    default:
 		//console.log([event,event.key.charCodeAt()]);
@@ -980,6 +1011,28 @@ Director.prototype._set_loading_=async function(args)
 Director.prototype._unset_loading=function()
 {
     this.element.loading_img.style.display='none';
+}
+
+Director.prototype._set_lock=function()
+{
+    this.element.lock.style.display='block';
+    this.element.lock.setAttribute('tabindex','-1');
+    this._set_loading_({type:'file'});
+    this.element.lock.focus();
+}
+Director.prototype._unset_lock=function()
+{
+    this.element.lock.style.display='none';
+    this._unset_loading();
+    let r=this.element.lock.dataset.relatedTarget;
+    if(r){
+	let el=document.getElementById(r);
+	delete this.element.lock.dataset.relatedTarget;
+	if(el)
+	    el.focus();
+    }
+    else
+	this.element.filelist.focus();
 }
 
 Director.prototype._copy_anno_=async function(anno)
