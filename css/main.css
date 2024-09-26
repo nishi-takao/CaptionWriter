@@ -289,6 +289,7 @@ button{
     line-height:104px;
     font-size:24pt;
     color:#d0d0d0;
+    text-shadow:1px 1px 2px #202020;
     background-color:#505070;
 }
 #edit-navi span,
@@ -308,7 +309,9 @@ button:hover{
 }
 
 *[disabled],
-#cwd[disabled]{
+#cwd[disabled]
+#edit-navi button[disabled],
+#edit-navi button[disabled]:hover{
     color:#505050;
     text-shadow:none;
     cursor:default;
