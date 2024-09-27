@@ -115,14 +115,6 @@ body{
     text-shadow:none;
     cursor:pointer;
 }
-/*#filelist li.has-annotation::after{
-    content: "\f00c";
-    margin-left:0.5em;
-    font-family:"Font Awesome 6 Free";
-    font-weight:900;
-    color:#00d000;
-    font-size:10pt;
-}*/
 #filelist li[data-has-annotation]::after{
     content: "\f00c";
     margin-left:0.5em;
@@ -176,7 +168,6 @@ body{
 
 #target-image{
     display:none;
-    /*display:inline-block;*/
     position:absolute;
     margin:0;
     padding:0;

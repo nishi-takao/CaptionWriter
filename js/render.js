@@ -8,8 +8,6 @@ const COPYRIGHT_YEAR=2024;
 const COPYRIGHT_AUTHOR_NAME='NISHI, Takao';
 const COPYRIGHT_AUTHOR_EMAIL='nishi.t.es@osaka-u.ac.jp';
 
-'&copy; 2024 by NISHI, Takao &lt;nishi.t.es@osaka-u.ac.jp&gt;';
-
 function escapeHTML(str)
 {
     return str
@@ -231,6 +229,11 @@ Director.prototype.cmd_edit_discard=function()
 	return;
 
     let path=this._current_image.dataset.path;
+    if(path)
+	path=decodeURI(path);
+    else
+	return;
+    
     var anno;
     API.read_anno(path).then(
 	(anno)=>{
@@ -427,13 +430,13 @@ Director.prototype._add_listeners=function()
 	    }
 	}
     );
-    let txt='[Ctrl-Shift-l] to unlock';
-    if(this._config.lockscreen_messgae)
-	txt=escapeHTML(this._config.lockscreen_message);
-    document.getElementById('lock-message').textContent=txt
+    document.getElementById('lock-message').textContent=
+	this._config.lockscreen_messgae||'[Ctrl-Shift-l] to unlock';
 
     document.getElementById('lock-bottom').innerHTML=
-	`${this._config.appName} ${this._config.appVersion} &copy; ${COPYRIGHT_YEAR} by ${COPYRIGHT_AUTHOR_NAME} &lt;${COPYRIGHT_AUTHOR_EMAIL}&gt;`;
+	`${this._config.appName} ${this._config.appVersion}
+&copy; ${COPYRIGHT_YEAR}
+by ${COPYRIGHT_AUTHOR_NAME} &lt;${COPYRIGHT_AUTHOR_EMAIL}&gt;`;
      
     //
     // global short-cut keys
@@ -670,7 +673,7 @@ Director.prototype._set_cwd=function(cwd)
     if(len>MAX_DIRNAME_LEN)
 	str='...'+str.substring(len-MAX_DIRNAME_LEN-3);
 
-    this.element.cwd.innerText=escapeHTML(str);
+    this.element.cwd.textContent=str;
     this.element.cwd.setAttribute('title',escapeHTML(cwd));
 }
 
@@ -678,7 +681,7 @@ Director.prototype._build_filelist=function(imagelist)
 {
     let old_path=null;
     if(this._current_image)
-	old_path=this._current_image.dataset.path;
+	old_path=decodeURI(this._current_image.dataset.path);
 
     let idx=0,last_anno_idx=null;
     if(imagelist.images && imagelist.images.length>0){
@@ -686,9 +689,9 @@ Director.prototype._build_filelist=function(imagelist)
 	
 	imagelist.images.forEach(function(obj){
 	    let li=document.createElement('li');
-	    li.textContent=escapeHTML(obj.basename);
+	    li.textContent=obj.basename;
 
-	    li.dataset.path=obj.path;
+	    li.dataset.path=encodeURI(obj.path);
 	    li.dataset.idx=idx;
 	    li.setAttribute('tabindex',-1);
 	    li.setAttribute('title','');
@@ -908,6 +911,8 @@ Director.prototype._do_commit=function()
     let path=this._current_image.dataset.path;
     if(path==null)
 	return;
+    else
+	path=decodeURI(path);
     
     let anno=this.element.caption.value;
     if(!anno){
@@ -989,6 +994,8 @@ Director.prototype._do_dispose=function()
     let path=this._current_image.dataset.path;
     if(path==null)
 	return;
+    else
+	path=decodeURI(path);
     
     let el=this._get_list_item(this._list_cursor_pos);
     if((!el) ||(!el.dataset.hasAnnotation))
