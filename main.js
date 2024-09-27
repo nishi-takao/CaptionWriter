@@ -20,13 +20,19 @@ const CONFIG_FILE='.config';
 const LAST_STAT_FILE='.last-stat';
 
 let config={
-    DEBUG: false,
-    ignore_last_status: false,
+    DEBUG:false,
+    save_last_status:true,
+    ignore_last_status:false,
     window:{
 	x:null,
 	y:null,
 	width:1024,
 	height:768
+    },
+    UI:{
+	appName:App.getName(),
+	appVersion:App.getVersion(),
+	lockscreen_message:''
     },
     cwd:'.'
 }
@@ -83,18 +89,23 @@ App.on("ready", () => {
     
     win.setMinimumSize(WINDOW_MIN_WIDTH,WINDOW_MIN_HEIGHT);
     win.loadURL('file://'+__dirname+'/main.html');
-    win.on('close',()=>{
-	let j=JSON.stringify({
-	    window:win.getBounds(),
-	    cwd:imagelist.cwd
-	},null,2);
-	try{
-	    FS.writeFileSync(LAST_STAT_FILE,j);
+    win.on(
+	'close',
+	()=>{
+	    if(config.save_last_status){
+		let j=JSON.stringify({
+		    window:win.getBounds(),
+		    cwd:imagelist.cwd
+		},null,2);
+		try{
+		    FS.writeFileSync(LAST_STAT_FILE,j);
+		}
+		catch(e){
+		    console.log(e);
+		}
+	    }
 	}
-	catch(e){
-	    console.log(e);
-	}
-    });
+    );
     win.on("closed",()=>{
 	win=null;
     });
@@ -270,6 +281,6 @@ Ipc.handle(
 Ipc.handle(
     'get-config',
     (event)=>{
-	return config
+	return config.UI||{};
     }
 );

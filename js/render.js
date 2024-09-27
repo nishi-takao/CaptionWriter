@@ -2,8 +2,13 @@
 //
 //
 const API=window.extra.api;
-
 const MAX_DIRNAME_LEN=64;
+
+const COPYRIGHT_YEAR=2024;
+const COPYRIGHT_AUTHOR_NAME='NISHI, Takao';
+const COPYRIGHT_AUTHOR_EMAIL='nishi.t.es@osaka-u.ac.jp';
+
+'&copy; 2024 by NISHI, Takao &lt;nishi.t.es@osaka-u.ac.jp&gt;';
 
 function escapeHTML(str)
 {
@@ -422,9 +427,13 @@ Director.prototype._add_listeners=function()
 	    }
 	}
     );
-    document.getElementById('lock-message').textContent=
-	'[Ctrl-Shift-l] to unlock';
+    let txt='[Ctrl-Shift-l] to unlock';
+    if(this._config.lockscreen_messgae)
+	txt=escapeHTML(this._config.lockscreen_message);
+    document.getElementById('lock-message').textContent=txt
 
+    document.getElementById('lock-bottom').innerHTML=
+	`${this._config.appName} ${this._config.appVersion} &copy; ${COPYRIGHT_YEAR} by ${COPYRIGHT_AUTHOR_NAME} &lt;${COPYRIGHT_AUTHOR_EMAIL}&gt;`;
      
     //
     // global short-cut keys
@@ -1070,9 +1079,7 @@ Director.prototype._set_config=function(c)
 }
 
 window.onload=async function(event){
-    await API.get_config().then((c)=>{
-	document.director=new Director(c);
-    });
+    document.director=new Director(await API.get_config());
     API.on_start_loading(
 	document.director._set_loading_.bind(document.director)
     );
