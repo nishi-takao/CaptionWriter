@@ -229,9 +229,7 @@ Director.prototype.cmd_edit_discard=function()
 	return;
 
     let path=this._current_image.dataset.path;
-    if(path)
-	path=decodeURI(path);
-    else
+    if(!path)
 	return;
     
     var anno;
@@ -681,7 +679,7 @@ Director.prototype._build_filelist=function(imagelist)
 {
     let old_path=null;
     if(this._current_image)
-	old_path=decodeURI(this._current_image.dataset.path);
+	old_path=this._current_image.dataset.path;
 
     let idx=0,last_anno_idx=null;
     if(imagelist.images && imagelist.images.length>0){
@@ -691,7 +689,7 @@ Director.prototype._build_filelist=function(imagelist)
 	    let li=document.createElement('li');
 	    li.textContent=obj.basename;
 
-	    li.dataset.path=encodeURI(obj.path);
+	    li.dataset.path=obj.path;
 	    li.dataset.idx=idx;
 	    li.setAttribute('tabindex',-1);
 	    li.setAttribute('title','');
@@ -911,8 +909,6 @@ Director.prototype._do_commit=function()
     let path=this._current_image.dataset.path;
     if(path==null)
 	return;
-    else
-	path=decodeURI(path);
     
     let anno=this.element.caption.value;
     if(!anno){
@@ -994,8 +990,6 @@ Director.prototype._do_dispose=function()
     let path=this._current_image.dataset.path;
     if(path==null)
 	return;
-    else
-	path=decodeURI(path);
     
     let el=this._get_list_item(this._list_cursor_pos);
     if((!el) ||(!el.dataset.hasAnnotation))

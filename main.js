@@ -153,7 +153,7 @@ Ipc.handle(
 Ipc.handle(
     'open-img',
     async (event,path)=>{
-	let item=imagelist.get_image(path);
+	let item=imagelist.get_image(path,true);
 	if(item){
 	    event.sender.send(
 		'ack-open',
@@ -178,7 +178,7 @@ Ipc.handle(
 Ipc.handle(
     'read-anno',
     async (event,path)=>{
-	let item=imagelist.get_image(path);
+	let item=imagelist.get_image(path,true);
 	if(item){
 	    event.sender.send(
 		'ack-open',
@@ -197,7 +197,7 @@ Ipc.handle(
 Ipc.handle(
     'write-anno',
     async (event,path,anno)=>{
-	let item=imagelist.get_image(path);
+	let item=imagelist.get_image(path,true);
 	let retval=null;
 
 	if(item && anno){
@@ -223,7 +223,7 @@ See the console for details.
 Ipc.handle(
     'rm-anno',
     async (event,path)=>{
-	let item=imagelist.get_image(path);
+	let item=imagelist.get_image(path,true);
 	let retval=null;
 	
 	if(item){
@@ -245,7 +245,7 @@ Ipc.handle(
 			target:path
 		    }
 		);
-		retval=item.remove_annotation(path);
+		retval=item.remove_annotation(decodeURI(path));
 		if(!retval)
 		    Dialog.showErrorBox(
 			'I/O Error',

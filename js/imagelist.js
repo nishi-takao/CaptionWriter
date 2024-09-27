@@ -153,12 +153,12 @@ ImageItem.prototype.dump=function(opt)
 {
     var obj={
 	is_dir:this.is_dir,
-	path:this.path,
-	basename:this.basename(),
+	path:encodeURI(this.path),
+	basename:encodeURI(this.basename()),
     };
 
     if(!this.is_dir){
-	obj.annotation_path=this.annotation_path;
+	obj.annotation_path=encodeURI(this.annotation_path);
 	obj.has_annotation=this.has_annotation;
 
 	if(opt){
@@ -249,8 +249,11 @@ ImageList.prototype.path_join=function(fn)
 {
     return Path.resolve(this.cwd,fn);
 }
-ImageList.prototype.get_image=function(path)
+ImageList.prototype.get_image=function(path,with_decode)
 {
+    if(with_decode)
+	path=decodeURI(path);
+
     return this.images.get(path);
 }
 ImageList.prototype.get_image_by_index=function(idx)
