@@ -188,7 +188,7 @@ URIarmedImageItem.prototype=Object.create(
     {
 	constructor:{
 	    value:URIarmedImageItem,
-	    enumerable: true,
+	    enumerable: false,
 	    writable: true,
 	    configurable: true
 	}
@@ -295,7 +295,7 @@ ImageList.prototype.path_join=function(fn)
 }
 ImageList.prototype.get_image=function(path)
 {
-    if(this._URIarm || with_decode)
+    if(this._URIarm)
 	path=decodeURI(path);
 
     return this.images.get(path);

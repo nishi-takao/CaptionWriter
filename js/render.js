@@ -435,10 +435,10 @@ Director.prototype._add_listeners=function()
     document.getElementById('lock-message').textContent=
 	this._config.lockscreen_messgae||'[Ctrl-Shift-l] to unlock';
 
-    document.getElementById('lock-bottom').innerHTML=
+    document.getElementById('lock-bottom').textContent=
 	`${this._config.appName} ${this._config.appVersion}
-&copy; ${COPYRIGHT_YEAR}
-by ${COPYRIGHT_AUTHOR_NAME} &lt;${COPYRIGHT_AUTHOR_EMAIL}&gt;`;
+\u00a9 ${COPYRIGHT_YEAR}
+by ${COPYRIGHT_AUTHOR_NAME} <${COPYRIGHT_AUTHOR_EMAIL}>`;
      
     //
     // global short-cut keys

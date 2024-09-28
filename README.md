@@ -19,28 +19,11 @@ It's a GUI tool, but almost all operations can be done using just the keyboard.
 
 1. install node.js and npm
 2. run `npm install` to install the remaining dependent libraries (electron, fontawesome-free, roboto-fontface, file-type and image-size)
-3. Copy Roboto woff2 fonts to the font directory
-4. Copy Fontawesome fonts to the font directory
-5. Copy the Fontawesome style file to the css directory
 
 ```
 $ cd Path/where/CaptionWriter/downloaded
 $ npm install
-
-# copy Robot fonts
-$ cp node_modules/roboto-fontface/fonts/roboto/Roboto-Regular.woff2 ./fonts/
-$ cp node_modules/roboto-fontface/fonts/roboto/Roboto-Bold.woff2 ./fonts/
-
-# copy FontAwesome fonts
-$ cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.* ./fonts/
-$ cp node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.* ./fonts/
-
-# copy FontAwesome style file
-$ cp node_modules/@fortawesome/fontawesome-free/css/fontawesome.min.css ./css/
 ```
-Yes, I know that steps 3.-5. shold be defined in build script.
-It's a hassle right now, so I'll do it when I feel like it :p
-
 
 ## Running
 ```
