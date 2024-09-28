@@ -153,18 +153,16 @@ ImageItem.prototype.dump=function(opt)
 {
     var obj={
 	is_dir:this.is_dir,
-	path:encodeURI(this.path),
-	basename:encodeURI(this.basename()),
+	path:this.path,
+	basename:this.basename(),
     };
 
     if(!this.is_dir){
-	obj.annotation_path=encodeURI(this.annotation_path);
+	obj.annotation_path=this.annotation_path;
 	obj.has_annotation=this.has_annotation;
 
-	if(opt){
-	    if(opt.with_size)
-		obj.image_size=this.image_size();
-	}
+	if(opt && opt.with_size)
+	    obj.image_size=this.image_size();
     }
 
     
@@ -175,16 +173,61 @@ ImageItem.prototype.dump=function(opt)
 //
 ////////////////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////////////
+//
+// ImageItem with URI encode
+//
+// I know it is very old-fashioned.
+//
+function URIarmedImageItem(fn,is_dir)
+{
+    ImageItem.prototype.constructor.call(this,fn,is_dir);
+}
+URIarmedImageItem.prototype=Object.create(
+    ImageItem.prototype,
+    {
+	constructor:{
+	    value:URIarmedImageItem,
+	    enumerable: true,
+	    writable: true,
+	    configurable: true
+	}
+    }
+);
+URIarmedImageItem.prototype.dump=function(opt)
+{
+    var obj={
+	is_dir:this.is_dir,
+	path:encodeURI(this.path),
+	basename:encodeURI(this.basename()),
+    };
+    
+    if(!this.is_dir){
+	obj.annotation_path=encodeURI(this.annotation_path);
+	obj.has_annotation=this.has_annotation;
+
+	if(opt && opt.with_size)
+	    obj.image_size=this.image_size();
+    }
+    
+    return obj;
+}
+//
+// end of URIarmedImageItem
+//
+////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////
 //
 //
 //
-function ImageList(dir)
+function ImageList({dir=null,with_URIarm=false})
 {
     this.cwd=".";
     this.dirs=new Map();
     this.images=new Map();
+    this._URIarm=with_URIarm;
+    
     if(dir)
 	this.scan(dir);
 };
@@ -205,6 +248,7 @@ ImageList.prototype.scan=function(dir,with_dir=true)
 	throw e;
     }
     
+    const I=this._URIarm ? URIarmedImageItem : ImageItem;
     files.forEach(function(fn){
 	var fullpath=Path.resolve(Path.join(dir,fn));
 	var stat;
@@ -217,7 +261,7 @@ ImageList.prototype.scan=function(dir,with_dir=true)
 	    if(stat.isDirectory() && with_dir){
 		self.dirs.set(
 		    fullpath,
-		    new ImageItem(fullpath,true)
+		    new I(fullpath,true)
 		);
 	    }
 	    else if(stat.isFile()){
@@ -225,7 +269,7 @@ ImageList.prototype.scan=function(dir,with_dir=true)
 		if(ext.match(ImageFileExtRegexp)){
 		    self.images.set(
 			fullpath,
-			new ImageItem(fullpath,false)
+			new I(fullpath,false)
 		    );
 		}
 	    }
@@ -249,9 +293,9 @@ ImageList.prototype.path_join=function(fn)
 {
     return Path.resolve(this.cwd,fn);
 }
-ImageList.prototype.get_image=function(path,with_decode)
+ImageList.prototype.get_image=function(path)
 {
-    if(with_decode)
+    if(this._URIarm || with_decode)
 	path=decodeURI(path);
 
     return this.images.get(path);

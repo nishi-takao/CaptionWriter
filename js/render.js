@@ -400,6 +400,8 @@ Director.prototype._add_listeners=function()
 		else
 		    this.element.filelist.focus();
 		break;
+	    default:
+		//console.log(event);
 	    }
 	}
     );
@@ -422,6 +424,8 @@ Director.prototype._add_listeners=function()
 	    switch(event.key){
 	    case 'L':
 		if(event.ctrlKey){
+		    event.preventDefault();
+		    event.stopPropagation();
 		    this._unset_lock();
 		}
 		break;
@@ -444,24 +448,39 @@ by ${COPYRIGHT_AUTHOR_NAME} &lt;${COPYRIGHT_AUTHOR_EMAIL}&gt;`;
 	(event)=>{
 	    switch(event.key){
 	    case 'Delete':
-		if(event.ctrlKey)
+		if(event.ctrlKey){
+		    event.preventDefault();
+		    event.stopPropagation();
 		    this.cmd_edit_dispose();
+		}
 		break;
 	    case 'Enter':
-		if(event.ctrlKey)
+		if(event.ctrlKey){
+		    event.preventDefault();
+		    event.stopPropagation();
 		    this.cmd_edit_commit();
+		}
 		break;
 	    case 'V':
-		if(event.ctrlKey)
+		if(event.ctrlKey){
+		    event.preventDefault();
+		    event.stopPropagation();
 		    this.cmd_edit_paste_tlc();
+		}
 		break;
 	    case 'D':
-		if(event.ctrlKey)
+		if(event.ctrlKey){
+		    event.preventDefault();
+		    event.stopPropagation();
 		    this.cmd_edit_discard();
+		}
 		break;
 	    case 'o':
-		if(event.ctrlKey)
+		if(event.ctrlKey){
+		    event.preventDefault();
+		    event.stopPropagation();
 		    this.cmd_dir_open();
+		}
 		break;
 	    case 'r':
 		if(event.ctrlKey){
@@ -471,11 +490,14 @@ by ${COPYRIGHT_AUTHOR_NAME} &lt;${COPYRIGHT_AUTHOR_EMAIL}&gt;`;
 		}
 		break;
 	    case 'F5':
+		event.preventDefault();
+		event.stopPropagation();
 		this.cmd_rescan();
 		break;
 	    case 'L':
 		if(event.ctrlKey){
 		    event.preventDefault();
+		    event.stopPropagation();
 		    this._set_lock();
 		}
 		break;
@@ -687,7 +709,7 @@ Director.prototype._build_filelist=function(imagelist)
 	
 	imagelist.images.forEach(function(obj){
 	    let li=document.createElement('li');
-	    li.textContent=obj.basename;
+	    li.textContent=decodeURI(obj.basename);
 
 	    li.dataset.path=obj.path;
 	    li.dataset.idx=idx;
