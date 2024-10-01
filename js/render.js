@@ -4,10 +4,6 @@
 const API=window.extra.api;
 const MAX_DIRNAME_LEN=64;
 
-const COPYRIGHT_YEAR=2024;
-const COPYRIGHT_AUTHOR_NAME='NISHI, Takao';
-const COPYRIGHT_AUTHOR_EMAIL='nishi.t.es@osaka-u.ac.jp';
-
 function escapeHTML(str)
 {
     return str
@@ -436,9 +432,8 @@ Director.prototype._add_listeners=function()
 	this._config.lockscreen_messgae||'[Ctrl-Shift-l] to unlock';
 
     document.getElementById('lock-bottom').textContent=
-	`${this._config.appName} ${this._config.appVersion}
-\u00a9 ${COPYRIGHT_YEAR}
-by ${COPYRIGHT_AUTHOR_NAME} <${COPYRIGHT_AUTHOR_EMAIL}>`;
+	`${this._config.appInfo.name} ${this._config.appInfo.version}
+\u00a9 ${this._config.appInfo.year} by ${this._config.appInfo.author}`;
      
     //
     // global short-cut keys

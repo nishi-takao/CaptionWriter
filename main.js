@@ -19,6 +19,30 @@ const WINDOW_MIN_HEIGHT=720;
 const CONFIG_FILE='.config';
 const LAST_STAT_FILE='.last-stat';
 
+function getDriveList()
+{
+    if(process.platform=='win32'){
+	try{
+	    return require('child_process')
+		.execSync(
+		    'Get-WmiObject -Class Win32_logicaldisk|'+
+			'Format-Wide -Property DeviceID -Column 1',
+		    {shell:'powershell'}
+		)
+		.toString('utf8')
+		.trim()
+		.split(/\s+/);
+	}
+	catch(e){
+	    console.log(e);
+	    // on error, returns the current drive
+	    return [process.cwd().slice(0,2)];
+	}
+    }
+    else
+	return null;
+}
+
 let config={
     DEBUG:false,
     save_last_status:true,
@@ -30,8 +54,6 @@ let config={
 	height:768
     },
     UI:{
-	appName:App.getName(),
-	appVersion:App.getVersion(),
 	lockscreen_message:''
     },
     cwd:'.'
@@ -52,6 +74,18 @@ if(!config.ignore_last_status){
     catch(e){}
 }
 
+const AUTHOR=require(Path.join(__dirname,'package.json')).author;
+const COPYRIGHT_YEAR=2024;
+Object.assign(config,{
+    UI:{
+	appInfo:{
+	    name:App.getName(),
+	    version:App.getVersion(),
+	    author:AUTHOR,
+	    year:COPYRIGHT_YEAR,
+	}
+    },
+});
 
 let win=null;
 let imagelist=new ImageList({with_URIarm:true});
@@ -73,7 +107,7 @@ App.on("ready", () => {
 	width:config.window.width,
 	height:config.window.height,
 	backgroundColor:'#2e2c29',
-	useContentSize:true,
+	useContentSize:false,
 	webPreferences:{
 	    sandbox:false,
 	    preload:Path.join(__dirname,'js','preload.js'),
