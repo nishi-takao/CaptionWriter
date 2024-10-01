@@ -189,14 +189,9 @@ Director.prototype.cmd_edit_clear_copied_anno=function()
 }
 
 
-Director.prototype.cmd_edit_commit=function(keep_focus)
+Director.prototype.cmd_edit_commit=function()
 {
-    if(keep_focus){
-	this._do_commit();
-	this.element.caption.focus();
-    }
-    else
-	this.element.filelist.focus();
+    this.element.filelist.focus();
 }
 
 Director.prototype.cmd_edit_paste_tlc=function()
@@ -386,7 +381,8 @@ Director.prototype._add_listeners=function()
 	    case 's':
 		if(event.ctrlKey){
 		    event.preventDefault();
-		    this.cmd_edit_commit(true);
+		    this.element.caption.blur();
+		    this.element.caption.focus();
 		}
 		break;
 	    case 'Enter':
