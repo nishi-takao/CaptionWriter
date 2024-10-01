@@ -340,18 +340,21 @@ Director.prototype._add_listeners=function()
    );
 
     
-
-    
     //
     // text-area
     //
+    const non_focus_relateds=this._edit_buttons.concat([this.element.lock]);
     this.element.caption.addEventListener(
 	'focus',
 	(event)=>{
-	    if(!this._current_image)
-		this.element.filelist.focus();
-	    else
+	    if(this._current_image){
+		let anno=this.element.caption.value;
+		if(!non_focus_relateds.includes(event.relatedTarget))
+		    this._set_anno(anno,event);
 		this._set_edit_btn_active();
+	    }
+	    else
+		this.element.filelist.focus();
 	}
     );
     this.element.caption.addEventListener(
@@ -363,6 +366,12 @@ Director.prototype._add_listeners=function()
 			this.element.caption.id;
 		    return;
 		}
+		this.element.caption.removeEventListener(
+		    'input',
+		    this._set_anno_changed.bind(this),
+		    {once:true}
+		);
+		
 		this._do_commit();
 		this._set_edit_btn_inactive();
 		if(!event.relatedTarget)
@@ -797,7 +806,7 @@ Director.prototype._show_anno_=async function(anno)
     this.element.caption.focus();
 
 }
-Director.prototype._set_anno=function(anno)
+Director.prototype._set_anno=function(anno,event)
 {
     let el=this.element.caption;
     if(anno)
@@ -807,11 +816,13 @@ Director.prototype._set_anno=function(anno)
     
     this._unset_anno_changed();
     
-    el.addEventListener(
-	'input',
-	this._set_anno_changed.bind(this),
-	{once:true}
-    );
+    if(event && event.target==this.element.caption && event.type=='focus'){
+	el.addEventListener(
+	    'input',
+	    this._set_anno_changed.bind(this),
+	    {once:true}
+	);
+    }
 }
 
 Director.prototype._close_current_image=function()
@@ -820,11 +831,6 @@ Director.prototype._close_current_image=function()
     if(!this._current_image)
 	return;
     
-    this.element.caption.removeEventListener(
-	'input',
-	this._set_anno_changed.bind(this),
-	{once:true}
-    );
     this.element.caption.value='';
     this._unset_anno_changed();
     
