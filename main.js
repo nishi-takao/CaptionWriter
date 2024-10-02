@@ -16,8 +16,11 @@ const ImageList=require('./js/imagelist');
 const WINDOW_MIN_WIDTH=800;
 const WINDOW_MIN_HEIGHT=720;
 
-const CONFIG_FILE='.config';
-const LAST_STAT_FILE='.last-stat';
+
+const HOME=require('os').homedir();
+const RC_PREFIX='.capw';
+const CONFIG_FILE=Path.join(HOME,RC_PREFIX);
+const LAST_STAT_FILE=Path.join(HOME,RC_PREFIX+'.last-stat');
 
 function getDriveList()
 {
