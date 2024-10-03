@@ -343,16 +343,20 @@ Director.prototype._add_listeners=function()
 	}
     );
 
-    let self=this;
-    const onEditEndResolve=(x,callback)=>{
-	if(x=='continue'){
-	    setTimeout(()=>{
-		self.element.caption.focus()
-	    },1); // Need a little bit moment to refocus
-	}
-	else
-	    callback(x);
-    };
+    const onEditEnd=(callback)=>{
+	this._edit_end().then((x)=>{
+	    if(x=='continue'){
+		// Need a little bit moment to refocus
+		setTimeout(()=>{
+		    this.element.caption.focus()
+		},1);
+	    }
+	    else
+		callback(Promise.resolve(x));
+	}).catch((e)=>{
+	    callback(Promise.resolve(e));
+	});
+    }
     this.element.caption.addEventListener(
 	'blur',
 	(event)=>{
@@ -367,20 +371,18 @@ Director.prototype._add_listeners=function()
 			return;
 		    }
 		    this._set_edit_btn_inactive();
-		    this._edit_end().then((x)=>{
-			onEditEndResolve(x,self.element.filelist.focus)
-		    }).catch((e)=>{
-			this.element.filelist.focus()
-		    });
+		    onEditEnd(
+			this.element.filelist.focus.bind(
+			    this.element.filelist,
+			    null
+			)
+		    );
 		}
 	    }
 	}
     );
 
     const CtrlUpDown=(step,promise)=>{
-	if(!promise)
-	    promise=Promise.resolve(null);
-	
 	promise.then(()=>{
 	    this.cmd_image_open(
 		this._list_cursor_pos+step,
@@ -397,21 +399,13 @@ Director.prototype._add_listeners=function()
 	    case 'ArrowUp':
 		if(event.ctrlKey){
 		    event.preventDefault();
-		    this._edit_end().then((x)=>{
-			onEditEndResolve(x,CtrlUpDown.bind(null,-1));
-		    }).catch((e)=>{
-			CtrlUpDown(-1);
-		    });
+		    onEditEnd(CtrlUpDown.bind(null,-1));
 		}
 		break;
 	    case 'ArrowDown':
 		if(event.ctrlKey){
 		    event.preventDefault();
-		    this._edit_end().then((x)=>{
-			onEditEndResolve(x,CtrlUpDown.bind(null,1));
-		    }).catch((e)=>{
-			CtrlUpDown(1);
-		    });
+		    onEditEnd(CtrlUpDown.bind(null,1));
 		}
 		break;
 	    case 's':
@@ -915,15 +909,6 @@ Director.prototype._set_anno=function(anno,event)
 	el.value='';
     
     this._unset_anno_changed();
-    /*
-    if(event && event.target==this.element.caption && event.type=='focus'){
-	el.addEventListener(
-	    'input',
-	    this._set_anno_changed.bind(this),
-	    {once:true}
-	);
-    }
-    */
 }
 
 Director.prototype._close_current_image=function()
