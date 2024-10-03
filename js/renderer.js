@@ -113,7 +113,10 @@ Director.prototype.cmd_list_up=function()
     if(this._list_cursor_pos==null)
 	this._list_cursor_pos=1;
     
-    this.cmd_image_open(this._list_cursor_pos-1,true);
+    this.cmd_image_open(
+	this._list_cursor_pos-1,
+	true
+    );
 }
 
 Director.prototype.cmd_list_down=function()
@@ -124,19 +127,24 @@ Director.prototype.cmd_list_down=function()
     if(this._list_cursor_pos==null)
 	this._list_cursor_pos=-1;
     
-    this.cmd_image_open(this._list_cursor_pos+1,true);
+    this.cmd_image_open(
+	this._list_cursor_pos+1,
+	true
+    );
 }
 
 Director.prototype.cmd_image_open=function(idx,keep_focus)
 {
     let path=this._idx2path(idx);
     if(!path)
-	return;
-    
-    API.open_img(path).then(
+	return Promise.resolve(null);
+
+    return API.open_img(path).then(
 	(result)=>{
 	    if(result)
-		this._show_image_(idx,result,keep_focus);
+		return this._show_image_(idx,result,keep_focus);
+	    
+	    return Promise.resolve(result);
 	},
 	(e)=>{
 	    console.log(e)
@@ -334,6 +342,17 @@ Director.prototype._add_listeners=function()
 		this.element.filelist.focus();
 	}
     );
+
+    let self=this;
+    const onEditEndResolve=(x,callback)=>{
+	if(x=='continue'){
+	    setTimeout(()=>{
+		self.element.caption.focus()
+	    },1); // Need a little bit moment to refocus
+	}
+	else
+	    callback(x);
+    };
     this.element.caption.addEventListener(
 	'blur',
 	(event)=>{
@@ -348,15 +367,8 @@ Director.prototype._add_listeners=function()
 			return;
 		    }
 		    this._set_edit_btn_inactive();
-		    Promise.any([this._edit_end()]).then((x)=>{
-			if(x==0){
-			    setTimeout(()=>{
-				this.element.caption.focus()
-			    },1); // Need a little bit moment to refocus
-			}
-			else{
-			    this.element.filelist.focus()
-			}
+		    this._edit_end().then((x)=>{
+			onEditEndResolve(x,self.element.filelist.focus)
 		    }).catch((e)=>{
 			this.element.filelist.focus()
 		    });
@@ -364,10 +376,44 @@ Director.prototype._add_listeners=function()
 	    }
 	}
     );
+
+    const CtrlUpDown=(step,promise)=>{
+	if(!promise)
+	    promise=Promise.resolve(null);
+	
+	promise.then(()=>{
+	    this.cmd_image_open(
+		this._list_cursor_pos+step,
+		true
+	    ).then((r)=>{
+		this.element.caption.focus()
+	    })
+	});
+    }
     this.element.caption.addEventListener(
 	'keydown',
 	(event)=>{
 	    switch(event.key){
+	    case 'ArrowUp':
+		if(event.ctrlKey){
+		    event.preventDefault();
+		    this._edit_end().then((x)=>{
+			onEditEndResolve(x,CtrlUpDown.bind(null,-1));
+		    }).catch((e)=>{
+			CtrlUpDown(-1);
+		    });
+		}
+		break;
+	    case 'ArrowDown':
+		if(event.ctrlKey){
+		    event.preventDefault();
+		    this._edit_end().then((x)=>{
+			onEditEndResolve(x,CtrlUpDown.bind(null,1));
+		    }).catch((e)=>{
+			CtrlUpDown(1);
+		    });
+		}
+		break;
 	    case 's':
 		if(event.ctrlKey){
 		    event.preventDefault();
@@ -398,8 +444,12 @@ Director.prototype._add_listeners=function()
     this.element.caption.setAttribute(
 	'title',
 	`[Ctrl-s]: Commit and Continue Editing
-[Ctrl-RET] or [TAB]: Commit
-[ESC]: Discard`
+[Ctrl-RET]: Commit
+[ESC]: Discard
+[TAB]: Exit Editing
+[Ctrl+\u2191]: Edit the image above on the list
+[Ctrl+\u2193]: Edit the image below on the list
+`
     );
     
 
@@ -766,7 +816,7 @@ Director.prototype._edit_start=function()
 Director.prototype._edit_end=function()
 {
     if(!(this._current_image && this._has_changed))
-	return Promise.reject(null);
+	return Promise.resolve(null);
     
     return Promise.any([
 	(async ()=>{
@@ -787,16 +837,15 @@ How do you process them?`,
 	(x)=>{
 	    switch(x){
 	    case 0:
+		return Promise.resolve('continue');
 		break;
 	    case 1:
-		this._do_commit();
+		return this._do_commit();
 		break;
 	    case 2:
-		this._do_discard();
+		return this._do_discard();
 		break;
 	    }
-	    
-	    return Promise.resolve(x);
 	}
     );
 }
@@ -989,21 +1038,14 @@ Director.prototype._set_all_inactive=function()
 Director.prototype._do_commit=function()
 {
     if(!this._current_image)
-	return Promise.reject(null);
+	return Promise.reject('commit');
     
     let path=this._current_image.dataset.path;
     if(path==null)
-	return Promise.reject(null);
+	return Promise.reject('commit');
     
     let anno=this.element.caption.value;
-    if(!anno){
-	let el=this._get_list_item(this._list_cursor_pos);
-	if((!el) || (!el.dataset.hasAnnotation))
-	    return Promise.reject(null);
-
-	return this._do_dispose();
-    }
-    else{
+    if(anno){
 	return API.write_anno(path,anno).then(
  	    (r)=>{
 		if(r){
@@ -1011,27 +1053,34 @@ Director.prototype._do_commit=function()
 		    this._set_anno_mark_();
 		    this._unset_anno_changed();
 		}
-		return Promise.resolve(r);
+		return Promise.resolve('commit');
 	    },
 	    (e)=>{
 		console.log(e);
 	    }
 	);
     }
+    else{
+	let el=this._get_list_item(this._list_cursor_pos);
+	if((!el) || (!el.dataset.hasAnnotation))
+	    return Promise.reject('dispose');
+	
+	return this._do_dispose();
+    }
 }
 Director.prototype._do_discard=function()
 {
     if(!this._current_image)
-	return Promise.reject(null);
+	return Promise.reject('discard');
 
     let path=this._current_image.dataset.path;
     if(!path)
-	return Promise.reject(null);
+	return Promise.reject('discard');
     
     return Promise.any([API.read_anno(path)]).then(
 	(anno)=>{
 	    this._show_anno_(anno,true);
-	    return Promise.resolve(anno);
+	    return Promise.resolve('discard');
 	}
     ).catch(
 	(e)=>{
@@ -1042,15 +1091,15 @@ Director.prototype._do_discard=function()
 Director.prototype._do_dispose=function()
 {
     if(!this._current_image)
-	return Promise.reject(null);
+	return Promise.reject('dispose');
     
     let path=this._current_image.dataset.path;
     if(path==null)
-	return Promise.reject(null);
+	return Promise.reject('dispose');
     
     let el=this._get_list_item(this._list_cursor_pos);
     if((!el) ||(!el.dataset.hasAnnotation))
-	return Promise.reject(null);
+	return Promise.reject('dispose');
     
     return API.rm_anno(path).then(
  	(r)=>{
@@ -1058,7 +1107,7 @@ Director.prototype._do_dispose=function()
 		this._set_anno_mark_(true);
 		this._unset_anno_changed();
 	    }
-	    return Promise.resolve(r);
+	    return Promise.resolve('dispose');
 	},
 	(e)=>{
 	    console.log(e);
