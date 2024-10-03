@@ -57,6 +57,7 @@ let config={
 	height:768
     },
     UI:{
+	auto_commit:true,
 	lockscreen_message:''
     },
     cwd:'.'
@@ -79,16 +80,12 @@ if(!config.ignore_last_status){
 
 const AUTHOR=require(Path.join(__dirname,'package.json')).author;
 const COPYRIGHT_YEAR=2024;
-Object.assign(config,{
-    UI:{
-	appInfo:{
-	    name:App.getName(),
-	    version:App.getVersion(),
-	    author:AUTHOR,
-	    year:COPYRIGHT_YEAR,
-	}
-    },
-});
+config.UI.appInfo={
+    name:App.getName(),
+    version:App.getVersion(),
+    author:AUTHOR,
+    year:COPYRIGHT_YEAR,
+};
 
 let win=null;
 let imagelist=new ImageList({with_URIarm:true});
@@ -294,6 +291,13 @@ See the console for details.
 	}
 	
 	return retval;
+    }
+);
+
+Ipc.handle(
+    'show-dialog',
+    (event,opt)=>{
+	return Dialog.showMessageBoxSync(win,opt);
     }
 );
 

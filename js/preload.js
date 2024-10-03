@@ -34,6 +34,9 @@ contextBridge.exposeInMainWorld(
 	    rm_anno:(path)=>{
 		return ipcRenderer.invoke('rm-anno',path);
 	    },
+	    show_dialog:(opt)=>{
+		return ipcRenderer.invoke('show-dialog',opt);
+	    },
 	    undo:()=>{
 		return ipcRenderer.invoke('undo');
 	    },

@@ -20,7 +20,7 @@ function Director(config={})
     this._config={};
     this._set_config(config);
     
-    this._lock_render='lock-render';
+    this._lock_renderer='lock-renderer';
     
     this.cwd=null;
     this._list_size=0;
@@ -74,16 +74,13 @@ function Director(config={})
 
 Director.prototype.cmd_dir_open=function(force)
 {
-    if((!force)&&(!this._is_btn_active(this.element.btn.list_open)))
+    if(!(force || this._is_btn_active(this.element.btn.list_open)))
 	return;
     
     this._set_all_inactive();
     API.open_dir().then(
 	(result)=>{
-	    Promise.all([this._render_(result)]);
-	    this._set_btn_active(this.element.cwd);
-	    this._set_btn_active(this.element.btn.list_open);
-	    this._set_btn_active(this.element.btn.list_rescan);
+	    this._rendering_(result);
 	},
 	(e)=>{
 	    console.log(e);
@@ -95,14 +92,11 @@ Director.prototype.cmd_dir_rescan=function()
 {
     if(!this._is_btn_active(this.element.btn.list_rescan))
 	return;
-    this._set_all_inactive();
 
+    this._set_all_inactive();
     API.open_dir(this.cwd).then(
 	(result)=>{
-	    Promise.all([this._render_(result,true)]);
-	    this._set_btn_active(this.element.cwd);
-	    this._set_btn_active(this.element.btn.list_open);
-	    this._set_btn_active(this.element.btn.list_rescan);
+	    this._rendering_(result,true);
 	},
 	(e)=>{
 	    console.log(e);
@@ -116,10 +110,9 @@ Director.prototype.cmd_list_up=function()
     if(!this._list_size)
 	return;
     
-    if(this._list_cursor_pos==null){
-	this.cmd_image_open(0,true);
-	return;
-    }
+    if(this._list_cursor_pos==null)
+	this._list_cursor_pos=1;
+    
     this.cmd_image_open(this._list_cursor_pos-1,true);
 }
 
@@ -128,10 +121,9 @@ Director.prototype.cmd_list_down=function()
     if(!this._list_size)
 	return;
     
-    if(this._list_cursor_pos==null){
-	this.cmd_image_open(0,true);
-	return;
-    }
+    if(this._list_cursor_pos==null)
+	this._list_cursor_pos=-1;
+    
     this.cmd_image_open(this._list_cursor_pos+1,true);
 }
 
@@ -191,7 +183,9 @@ Director.prototype.cmd_edit_clear_copied_anno=function()
 
 Director.prototype.cmd_edit_commit=function()
 {
-    this.element.filelist.focus();
+    this._do_commit().then((r)=>{
+	this.element.filelist.focus();
+    });
 }
 
 Director.prototype.cmd_edit_paste_tlc=function()
@@ -204,40 +198,30 @@ Director.prototype.cmd_edit_paste_tlc=function()
 
 Director.prototype.cmd_edit_undo=function()
 {
-    API.undo();
-    this.element.caption.focus();
+    API.undo().then(()=>{
+	this.element.caption.focus();
+    });
 }
 
 Director.prototype.cmd_edit_redo=function()
 {
-    API.redo();
-    this.element.caption.focus();
+    API.redo().then(()=>{
+	this.element.caption.focus();
+    });
 }
 
 Director.prototype.cmd_edit_discard=function()
 {
-    if(!this._current_image)
-	return;
-
-    let path=this._current_image.dataset.path;
-    if(!path)
-	return;
-    
-    var anno;
-    API.read_anno(path).then(
-	(anno)=>{
-	    this._show_anno_(anno);
-	},
-	(e)=>{
-	    console.log(e);
-	}
-    );
+    this._do_discard();
 }
 
 Director.prototype.cmd_edit_dispose=function()
 {
-    this._do_dispose();
-    this.element.filelist.focus();
+    this._do_dispose().then((r)=>{
+	this.element.filelist.focus();
+    }).catch((e)=>{
+	this.element.filelist.focus();
+    });
 }
 
 
@@ -343,10 +327,8 @@ Director.prototype._add_listeners=function()
 	'focus',
 	(event)=>{
 	    if(this._current_image){
-		let anno=this.element.caption.value;
-		if(!non_focus_relateds.includes(event.relatedTarget))
-		    this._set_anno(anno,event);
 		this._set_edit_btn_active();
+		this._edit_start();
 	    }
 	    else
 		this.element.filelist.focus();
@@ -355,22 +337,30 @@ Director.prototype._add_listeners=function()
     this.element.caption.addEventListener(
 	'blur',
 	(event)=>{
-	    if(!this._edit_buttons.includes(event.relatedTarget)){
-		if(event.relatedTarget==this.element.lock){
-		    this.element.lock.dataset.relatedTarget=
-			this.element.caption.id;
-		    return;
+	    if(document.activeElement==event.srcElement)
+		return;
+	    
+	    if(this._current_image){
+		if(!this._edit_buttons.includes(event.relatedTarget)){
+		    if(event.relatedTarget==this.element.lock){
+			this.element.lock.dataset.relatedTarget=
+			    this.element.caption.id;
+			return;
+		    }
+		    this._set_edit_btn_inactive();
+		    Promise.any([this._edit_end()]).then((x)=>{
+			if(x==0){
+			    setTimeout(()=>{
+				this.element.caption.focus()
+			    },1); // Need a little bit moment to refocus
+			}
+			else{
+			    this.element.filelist.focus()
+			}
+		    }).catch((e)=>{
+			this.element.filelist.focus()
+		    });
 		}
-		this.element.caption.removeEventListener(
-		    'input',
-		    this._set_anno_changed.bind(this),
-		    {once:true}
-		);
-		
-		this._do_commit();
-		this._set_edit_btn_inactive();
-		if(!event.relatedTarget)
-		    this.element.filelist.focus();
 	    }
 	}
     );
@@ -381,8 +371,7 @@ Director.prototype._add_listeners=function()
 	    case 's':
 		if(event.ctrlKey){
 		    event.preventDefault();
-		    this.element.caption.blur();
-		    this.element.caption.focus();
+		    this._do_commit();
 		}
 		break;
 	    case 'Enter':
@@ -397,7 +386,7 @@ Director.prototype._add_listeners=function()
 		if(el.selectionStart!=el.selectionEnd)
 		    el.selectionEnd=el.selectionStart
 		else if(this._has_changed)
-		    this.cmd_edit_discard();
+		    this._do_discard();
 		else
 		    this.element.filelist.focus();
 		break;
@@ -544,8 +533,8 @@ Director.prototype._add_listeners=function()
     );
     
     // declaring as oneshot event for avoiding re-entrance
-    const func=async (event)=>{
-	    await this._resize_();
+    const func=(event)=>{
+	    this._resize_();
 	    window.addEventListener(
 		'resize',
 		func,
@@ -569,13 +558,13 @@ Director.prototype._resize_=async function()
 {
     let cw,ch;
     await navigator.locks.request(
-	this._lock_render,
+	this._lock_renderer,
 	{ ifAvailable: true },
 	(lock)=>{
 	    [cw,ch]=this._fit_image();
 	}
     );
-
+    
     return true;
 }
 
@@ -631,9 +620,10 @@ Director.prototype._fit_image=function()
     return [cw,ch];
 }
 
-Director.prototype._render_=async function(imagelist,keep_image)
+Director.prototype._rendering_=async function(imagelist,keep_image)
 {
     if(!imagelist){
+	this._set_list_btn_active();
 	this._unset_loading();
 	return;
     }
@@ -641,15 +631,18 @@ Director.prototype._render_=async function(imagelist,keep_image)
     if(this.cwd==imagelist.cwd)
 	keep_image=true;
     
-    var last_anno=null;
-    await navigator.locks.request(this._lock_render,(lock)=>{
-	this._erase_body(false,keep_image);
-
-	this._set_cwd(imagelist.cwd);
-	last_anno=this._build_filelist(imagelist);
-
-	this._fit_image();
-    });
+    let last_anno_idx=null;
+    await navigator.locks.request(
+	this._lock_renderer,
+	(lock)=>{
+	    this._erase_body(false,keep_image);
+	    
+	    this._set_cwd(imagelist.cwd);
+	    last_anno_idx=this._build_filelist(imagelist);
+	    
+	    this._fit_image();
+	}
+    );
 
     this._unset_loading();
     if(keep_image && this._list_cursor_pos!=null){
@@ -657,10 +650,19 @@ Director.prototype._render_=async function(imagelist,keep_image)
 	el.focus();
     }
     else if(this._list_size)
-	this.cmd_image_open(last_anno==null ? 0 : last_anno,true);
-
+	this.cmd_image_open(last_anno_idx==null ? 0 : last_anno_idx,true);
+    
+    this._set_list_btn_active();
     this.element.filelist.focus();
 }
+
+Director.prototype._set_list_btn_active=function()
+{
+    this._set_btn_active(this.element.cwd);
+    this._set_btn_active(this.element.btn.list_open);
+    this._set_btn_active(this.element.btn.list_rescan);
+}
+
 
 Director.prototype._erase_body=function(keep_list,keep_img)
 {
@@ -746,6 +748,59 @@ Director.prototype._build_filelist=function(imagelist)
     return last_anno_idx;
 }
 
+Director.prototype._edit_start=function()
+{
+    if(!this._current_image)
+	return;
+    
+    if(this._has_changed)
+	this._set_anno_changed()
+    else{
+	this.element.caption.addEventListener(
+	    'input',
+	    this._set_anno_changed.bind(this),
+	    {once:true}
+	);
+    }
+}
+Director.prototype._edit_end=function()
+{
+    if(!(this._current_image && this._has_changed))
+	return Promise.reject(null);
+    
+    return Promise.any([
+	(async ()=>{
+	    if(this._config.auto_commit)
+		return 1;
+	    else{
+		return await API.show_dialog({
+		    title:'Confirmation',
+		    type:'question',
+		    message:`Editing is in progress.
+How do you process them?`,
+		    buttons:['Continue editing','Commit','Discard'],
+		    defaultId:0,
+		})
+	    }
+	})()
+    ]).then(
+	(x)=>{
+	    switch(x){
+	    case 0:
+		break;
+	    case 1:
+		this._do_commit();
+		break;
+	    case 2:
+		this._do_discard();
+		break;
+	    }
+	    
+	    return Promise.resolve(x);
+	}
+    );
+}
+
 Director.prototype._idx2path=function(idx)
 {
     let el=this.element.filelist.getElementsByTagName('li')[idx];
@@ -757,7 +812,7 @@ Director.prototype._idx2path=function(idx)
 Director.prototype._show_image_=async function(idx,obj,keep_focus)
 {
     await navigator.locks.request(
-	this._lock_render,
+	this._lock_renderer,
 	(lock)=>{
 	    this._close_current_image();
 
@@ -788,19 +843,19 @@ Director.prototype._show_image_=async function(idx,obj,keep_focus)
     if(keep_focus)
 	this.element.filelist.focus();
     else
-	this.cmd_edit_start();
+	this.element.caption.focus();
 }
-Director.prototype._show_anno_=async function(anno)
+Director.prototype._show_anno_=async function(anno,keep_focus)
 {
     await navigator.locks.request(
-	this._lock_render,
+	this._lock_renderer,
 	(lock)=>{
 	    this._set_anno(anno);
 	    this._unset_loading();
 	}
     );
-    this.element.caption.focus();
-
+    if(!keep_focus)
+	this.element.caption.focus();
 }
 Director.prototype._set_anno=function(anno,event)
 {
@@ -811,7 +866,7 @@ Director.prototype._set_anno=function(anno,event)
 	el.value='';
     
     this._unset_anno_changed();
-    
+    /*
     if(event && event.target==this.element.caption && event.type=='focus'){
 	el.addEventListener(
 	    'input',
@@ -819,6 +874,7 @@ Director.prototype._set_anno=function(anno,event)
 	    {once:true}
 	);
     }
+    */
 }
 
 Director.prototype._close_current_image=function()
@@ -877,11 +933,21 @@ Director.prototype._set_anno_changed=function()
 }
 Director.prototype._unset_anno_changed=function()
 {
+    let c=this._has_changed;
+    this._has_changed=false;
+    
     this._set_btn_inactive(this.element.btn.edit_commit);
     this._set_btn_inactive(this.element.btn.edit_undo);
     this._set_btn_inactive(this.element.btn.edit_redo);
     this._set_btn_inactive(this.element.btn.edit_discard);
-    this._has_changed=false;
+    
+    this.element.caption.removeEventListener(
+	'input',
+	this._set_anno_changed.bind(this),
+	{once:true}
+    );
+    
+    return c;
 }
 Director.prototype._set_edit_btn_active=function()
 {
@@ -922,27 +988,30 @@ Director.prototype._set_all_inactive=function()
 
 Director.prototype._do_commit=function()
 {
-    if((!this._current_image)||(!this._has_changed))
-	return;
+    if(!this._current_image)
+	return Promise.reject(null);
     
     let path=this._current_image.dataset.path;
     if(path==null)
-	return;
+	return Promise.reject(null);
     
     let anno=this.element.caption.value;
     if(!anno){
 	let el=this._get_list_item(this._list_cursor_pos);
 	if((!el) || (!el.dataset.hasAnnotation))
-	    return;
+	    return Promise.reject(null);
 
-	this._do_dispose();
+	return this._do_dispose();
     }
     else{
-	API.write_anno(path,anno).then(
+	return API.write_anno(path,anno).then(
  	    (r)=>{
-		if(r)
+		if(r){
 		    this._copy_anno_(anno);
-		    this._set_commited_();
+		    this._set_anno_mark_();
+		    this._unset_anno_changed();
+		}
+		return Promise.resolve(r);
 	    },
 	    (e)=>{
 		console.log(e);
@@ -950,30 +1019,75 @@ Director.prototype._do_commit=function()
 	);
     }
 }
-
-Director.prototype._set_commited_=async function(disposed)
+Director.prototype._do_discard=function()
 {
-   await navigator.locks.request(
-       this._lock_render,
-       (lock)=>{
-	   this._unset_loading();
-	   let el=this._get_list_item(this._list_cursor_pos);
-	   if(!el)
-	       return null;
-	   
-	   if(disposed){
-	       delete el.dataset.hasAnnotation;
-	       this.element.caption.value='';
-	       this._set_btn_inactive(this.element.btn.edit_dispose);
-	   }
-	   else{
-	       el.dataset.hasAnnotation='true';
-	       this._set_btn_active(this.element.btn.edit_dispose);
-	   }
-	   this._unset_anno_changed();
-	   return el;
-       }
-   );
+    if(!this._current_image)
+	return Promise.reject(null);
+
+    let path=this._current_image.dataset.path;
+    if(!path)
+	return Promise.reject(null);
+    
+    return Promise.any([API.read_anno(path)]).then(
+	(anno)=>{
+	    this._show_anno_(anno,true);
+	    return Promise.resolve(anno);
+	}
+    ).catch(
+	(e)=>{
+	    console.log(e);
+	}
+    );
+}
+Director.prototype._do_dispose=function()
+{
+    if(!this._current_image)
+	return Promise.reject(null);
+    
+    let path=this._current_image.dataset.path;
+    if(path==null)
+	return Promise.reject(null);
+    
+    let el=this._get_list_item(this._list_cursor_pos);
+    if((!el) ||(!el.dataset.hasAnnotation))
+	return Promise.reject(null);
+    
+    return API.rm_anno(path).then(
+ 	(r)=>{
+	    if(r){
+		this._set_anno_mark_(true);
+		this._unset_anno_changed();
+	    }
+	    return Promise.resolve(r);
+	},
+	(e)=>{
+	    console.log(e);
+	}
+    );
+}
+
+Director.prototype._set_anno_mark_=async function(disposed)
+{
+    await navigator.locks.request(
+	this._lock_renderer,
+	(lock)=>{
+	    this._unset_loading();
+	    let el=this._get_list_item(this._list_cursor_pos);
+	    if(el){
+		if(disposed){
+		    delete el.dataset.hasAnnotation;
+		    this.element.caption.value='';
+		    this._set_btn_inactive(this.element.btn.edit_dispose);
+		}
+		else{
+		    el.dataset.hasAnnotation='true';
+		    this._set_btn_active(this.element.btn.edit_dispose);
+		}
+		this._unset_anno_changed();
+	    }
+	}
+    )
+    
 }
 
 Director.prototype._do_paste_=async function()
@@ -985,7 +1099,7 @@ Director.prototype._do_paste_=async function()
     // paste the value from the clipboard instead of rewriting it directly
     //
     await navigator.locks.request(
-	this._lock_render,
+	this._lock_renderer,
 	(lock)=>{
 	    API.copy_anno(anno).then(
 		(r)=>{
@@ -1001,42 +1115,17 @@ Director.prototype._do_paste_=async function()
     );
 }
 
-Director.prototype._do_dispose=function()
-{
-    if(!this._current_image)
-	return;
-    
-    let path=this._current_image.dataset.path;
-    if(path==null)
-	return;
-    
-    let el=this._get_list_item(this._list_cursor_pos);
-    if((!el) ||(!el.dataset.hasAnnotation))
-	return;
-    
-    API.rm_anno(path).then(
- 	(r)=>{
-	    if(r)
-		this._set_commited_(true);
-	},
-	(e)=>{
-	    console.log(e);
-	}
-    );
-}
 
 Director.prototype._set_loading_=async function(args)
 {
     await navigator.locks.request(
-	this._lock_render,
+	this._lock_renderer,
 	{ ifAvailable: true },
 	(lock)=>{
 	    this._erase_body(
 		(args && args.type=='file') ? true : false,
 		true
 	    );
-	    //if(args && args.type=='dir' && args.target)
-	    //	this._set_cwd(args.target);
 	    
 	    this.element.loading_img.style.display='inline-block';
 	}
@@ -1072,7 +1161,7 @@ Director.prototype._unset_lock=function()
 Director.prototype._copy_anno_=async function(anno)
 {
     await navigator.locks.request(
-	this._lock_render,
+	this._lock_renderer,
 	(lock)=>{
 	    this._last_commit_anno=anno;
 	    
