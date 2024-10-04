@@ -77,32 +77,15 @@ Director.prototype.cmd_dir_open=function(force)
     if(!(force || this._is_btn_active(this.element.btn.list_open)))
 	return;
     
-    this._set_all_inactive();
-    API.open_dir().then(
-	(result)=>{
-	    this._rendering_(result);
-	},
-	(e)=>{
-	    console.log(e);
-	}
-    );
+    this._do_dir_open(false);
 }
 
 Director.prototype.cmd_dir_rescan=function()
 {
     if(!this._is_btn_active(this.element.btn.list_rescan))
 	return;
-
-    this._set_all_inactive();
-    API.open_dir(this.cwd).then(
-	(result)=>{
-	    this._rendering_(result,true);
-	},
-	(e)=>{
-	    console.log(e);
-	    this.cmd_dir_open(true);
-	}
-    );
+    
+    this._do_dir_open(true);
 }
 
 Director.prototype.cmd_list_up=function()
@@ -343,20 +326,6 @@ Director.prototype._add_listeners=function()
 	}
     );
 
-    const onEditEnd=(callback)=>{
-	this._edit_end().then((x)=>{
-	    if(x=='continue'){
-		// Need a little bit moment to refocus
-		setTimeout(()=>{
-		    this.element.caption.focus()
-		},1);
-	    }
-	    else
-		callback(Promise.resolve(x));
-	}).catch((e)=>{
-	    callback(Promise.resolve(e));
-	});
-    }
     this.element.caption.addEventListener(
 	'blur',
 	(event)=>{
@@ -371,7 +340,7 @@ Director.prototype._add_listeners=function()
 			return;
 		    }
 		    this._set_edit_btn_inactive();
-		    onEditEnd(
+		    this._onEditEnd(
 			this.element.filelist.focus.bind(
 			    this.element.filelist,
 			    null
@@ -399,13 +368,13 @@ Director.prototype._add_listeners=function()
 	    case 'ArrowUp':
 		if(event.ctrlKey){
 		    event.preventDefault();
-		    onEditEnd(CtrlUpDown.bind(null,-1));
+		    this._onEditEnd(CtrlUpDown.bind(null,-1));
 		}
 		break;
 	    case 'ArrowDown':
 		if(event.ctrlKey){
 		    event.preventDefault();
-		    onEditEnd(CtrlUpDown.bind(null,1));
+		    this._onEditEnd(CtrlUpDown.bind(null,1));
 		}
 		break;
 	    case 's':
@@ -477,7 +446,7 @@ Director.prototype._add_listeners=function()
     // global short-cut keys
     //
     window.addEventListener(
-	'keypress',
+	'keydown',
 	(event)=>{
 	    switch(event.key){
 	    case 'Delete':
@@ -519,13 +488,13 @@ Director.prototype._add_listeners=function()
 		if(event.ctrlKey){
 		    event.preventDefault();
 		    event.stopPropagation();
-		    this.cmd_rescan();
+		    this.cmd_dir_rescan();
 		}
 		break;
 	    case 'F5':
 		event.preventDefault();
 		event.stopPropagation();
-		this.cmd_rescan();
+		this.cmd_dir_rescan();
 		break;
 	    case 'L':
 		if(event.ctrlKey){
@@ -844,6 +813,25 @@ How do you process them?`,
     );
 }
 
+//
+// _edit_end wrapper
+//
+Director.prototype._onEditEnd=function(callback,promise=this._edit_end())
+{
+    promise.then((x)=>{
+	if(x=='continue'){
+	    // Need a little bit moment to refocus
+	    setTimeout(()=>{
+		this.element.caption.focus()
+	    },1);
+	}
+	else
+	    callback(Promise.resolve(x));
+    }).catch((e)=>{
+	callback(Promise.resolve(e));
+    });
+}
+
 Director.prototype._idx2path=function(idx)
 {
     let el=this.element.filelist.getElementsByTagName('li')[idx];
@@ -1019,6 +1007,38 @@ Director.prototype._set_all_inactive=function()
     });
 }
 
+Director.prototype._do_dir_open=function(is_rescan)
+{
+    let promise=Promise.resolve(null);
+    let editing=false
+    if(this._has_changed){
+	promise=this._edit_end();
+	editing=true;
+    }
+
+    const dir=is_rescan ? this.cwd : null;
+    const callback=()=>{
+	this._set_all_inactive();
+	API.open_dir(dir).then(
+	    (result)=>{
+		return this._rendering_(result,is_rescan);
+	    },
+	    (e)=>{
+		console.log(e);
+		if(is_rescan)
+		    this._do_dir_open(false);
+	    }
+	).then(()=>{
+	    if(editing)
+		this.element.caption.focus();
+	});
+    }
+
+    this._onEditEnd(
+	callback.bind(this),
+	promise
+    );
+}
 
 Director.prototype._do_commit=function()
 {
