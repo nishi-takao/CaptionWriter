@@ -818,17 +818,22 @@ How do you process them?`,
 //
 Director.prototype._onEditEnd=function(callback,promise=this._edit_end())
 {
-    promise.then((x)=>{
+    return promise.then((x)=>{
+	let p=Promise.resolve(x);
 	if(x=='continue'){
 	    // Need a little bit moment to refocus
 	    setTimeout(()=>{
 		this.element.caption.focus()
-	    },1);
+	    },5);
 	}
 	else
-	    callback(Promise.resolve(x));
+	    callback(p);
+
+	return p;
     }).catch((e)=>{
-	callback(Promise.resolve(e));
+	let p=Promise.resolve(e);
+	callback(p);
+	return p;
     });
 }
 
@@ -1250,5 +1255,20 @@ window.onload=async function(event){
     document.director.cmd_dir_open();
 };
 window.onbeforeunload=function(event){
-    document.director._do_commit();
+    const self=document.director;
+    if(!(self._current_image && self._has_changed))
+	return;
+
+    event.preventDefault();
+    self._edit_end().then((x)=>{
+	if(x=='continue'){
+	    self.element.caption.focus()
+	}
+	else{
+	    setTimeout(
+		window.close,
+		5
+	    );
+	}
+    });
 }
