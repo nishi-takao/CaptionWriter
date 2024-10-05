@@ -8,13 +8,26 @@ contextBridge.exposeInMainWorld(
     'extra',
     {
 	api:{
-	    on_start_loading:(func)=>{
+	    reg_on_start_loading_handler:(callback)=>{
 		ipcRenderer.on(
 		    'ack-open',
 		    (event,args)=>{
-			func(args);
+			callback(args);
 		    }
 		);
+	    },
+	    
+	    reg_on_close_handler:(callback)=>{
+		ipcRenderer.on(
+		    'on-close',
+		    (event)=>{
+			callback();
+		    }
+		);
+	    },
+	    
+	    get_config:()=>{
+		return ipcRenderer.invoke('get-config');
 	    },
 	    open_dir:(path)=>{
 		return ipcRenderer.invoke('open-dir',path);
@@ -46,8 +59,8 @@ contextBridge.exposeInMainWorld(
 	    paste:(anno)=>{
 		return ipcRenderer.invoke('paste');
 	    },
-	    get_config:()=>{
-		return ipcRenderer.invoke('get-config');
+	    reload:()=>{
+		return ipcRenderer.invoke('forceReload');
 	    }
 	}
     }

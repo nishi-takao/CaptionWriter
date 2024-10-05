@@ -30,7 +30,8 @@ function Director(config={})
     this._is_editing=null;
     this._has_changed=false;
     this._last_commit_anno=null;
-
+    this._win_close_action=null;
+    
     //
     // object caches
     //
@@ -558,6 +559,37 @@ Director.prototype._add_listeners=function()
 	'resize',
 	func,
 	{once:true}
+    );
+
+    window.addEventListener(
+	'beforeunload',
+	(event)=>{
+	    if(!(this._current_image && this._has_changed))
+		return;
+	    
+	    console.log(document.director._onclose_action);
+	    event.preventDefault();
+	    this._edit_end().then((x)=>{
+		if(x=='continue'){
+		    event.preventDefault();
+		    event.returnValue=false;
+		    this.element.caption.focus();
+		    return event;
+		}
+		else{
+		    this.element.filelist.focus();
+		    //
+		    // I want to know more smart way....
+		    //
+		    const callback=
+			this._win_close_action ? window.close : API.reload;
+		    setTimeout(
+			callback,
+			EVENT_OVERWRITE_INTERVAL
+		    );
+		}
+	    })
+	}
     );
 }
 
@@ -1241,31 +1273,14 @@ window.onload=function(event){
     API.get_config().then(
 	(c)=>document.director=new Director(c)
     ).then((r)=>{
-	API.on_start_loading(
+	API.reg_on_start_loading_handler(
 	    document.director._set_loading_.bind(document.director)
+	);
+	API.reg_on_close_handler(
+	    ()=>{
+		document.director._win_close_action=true;
+	    }
 	);
 	document.director.cmd_dir_open();
     });
-}
-window.onbeforeunload=function(event){
-    const self=document.director;
-    if(!(self._current_image && self._has_changed))
-	return;
-
-    event.preventDefault();
-    self._edit_end().then((x)=>{
-	if(x=='continue'){
-	    self.element.caption.focus();
-	}
-	else{
-	    self.element.filelist.focus();
-	    //
-	    // I want to know more smart way....
-	    //
-	    setTimeout(
-		window.close,
-		EVENT_OVERWRITE_INTERVAL
-	    );
-	}
-    })
 }

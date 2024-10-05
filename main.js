@@ -125,19 +125,33 @@ App.on("ready", () => {
     win.loadURL('file://'+__dirname+'/main.html');
     win.on(
 	'close',
-	()=>{
-	    if(config.save_last_status){
-		let j=JSON.stringify({
-		    window:win.getBounds(),
-		    cwd:imagelist.cwd
-		},null,2);
-		try{
-		    FS.writeFileSync(LAST_STAT_FILE,j);
-		}
-		catch(e){
-		    console.log(e);
-		}
-	    }
+	async (event)=>{
+	    let p=[
+		new Promise(
+		    (r)=>win.webContents.send('on-close')
+		),
+		new Promise(
+		    (r)=>{
+			if(config.save_last_status){
+			    let j=JSON.stringify({
+				window:win.getBounds(),
+				cwd:imagelist.cwd
+			    },null,2);
+			    try{
+				FS.writeFileSync(LAST_STAT_FILE,j);
+			    }
+			    catch(e){
+				console.log(e);
+			    }
+			}
+			return null;
+		    }
+		),
+		new Promise(
+		    (r)=>setTimeout(()=>{},3)
+		)
+	    ];
+	    await Promise.all(p).then((r)=>{});
 	}
     );
     win.on("closed",()=>{
@@ -150,6 +164,13 @@ App.on("window-all-closed",()=>{
 	App.quit();
     }
 });
+
+Ipc.handle(
+    'get-config',
+    (event)=>{
+	return config.UI||{};
+    }
+);
 
 let cwd=imagelist.cwd||config.cwd;
 Ipc.handle(
@@ -320,8 +341,8 @@ Ipc.handle(
     }
 );
 Ipc.handle(
-    'get-config',
-    (event)=>{
-	return config.UI||{};
+    'forceReload',
+    (event,arg)=>{
+	return win.webContents.reloadIgnoringCache();
     }
 );
