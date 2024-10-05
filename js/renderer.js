@@ -3,6 +3,7 @@
 //
 const API=window.extra.api;
 const MAX_DIRNAME_LEN=64;
+const EVENT_OVERWRITE_INTERVAL=3;
 
 function escapeHTML(str)
 {
@@ -26,6 +27,7 @@ function Director(config={})
     this._list_size=0;
     this._list_cursor_pos=null;
     this._current_image=null;
+    this._is_editing=null;
     this._has_changed=false;
     this._last_commit_anno=null;
 
@@ -129,9 +131,7 @@ Director.prototype.cmd_image_open=function(idx,keep_focus)
 	    
 	    return Promise.resolve(result);
 	},
-	(e)=>{
-	    console.log(e)
-	}
+	(e)=>console.log(e)
     );
 }
 
@@ -766,6 +766,7 @@ Director.prototype._edit_start=function()
     if(!this._current_image)
 	return;
     
+    this._is_editing=true;
     if(this._has_changed)
 	this._set_anno_changed()
     else{
@@ -781,22 +782,20 @@ Director.prototype._edit_end=function()
     if(!(this._current_image && this._has_changed))
 	return Promise.resolve(null);
     
-    return Promise.any([
-	(async ()=>{
-	    if(this._config.auto_commit)
-		return 1;
-	    else{
-		return await API.show_dialog({
-		    title:'Confirmation',
-		    type:'question',
-		    message:`Editing is in progress.
+    return (async ()=>{
+	if(this._config.auto_commit)
+	    return 1;
+	else{
+	    return await API.show_dialog({
+		title:'Confirmation',
+		type:'question',
+		message:`Editing is in progress.
 How do you process them?`,
-		    buttons:['Continue editing','Commit','Discard'],
-		    defaultId:0,
-		})
-	    }
-	})()
-    ]).then(
+		buttons:['Continue editing','Commit','Discard'],
+		defaultId:0,
+	    })
+	}
+    })().then(
 	(x)=>{
 	    switch(x){
 	    case 0:
@@ -824,14 +823,16 @@ Director.prototype._onEditEnd=function(callback,promise=this._edit_end())
 	    // Need a little bit moment to refocus
 	    setTimeout(()=>{
 		this.element.caption.focus()
-	    },5);
+	    },EVENT_OVERWRITE_INTERVAL);
 	}
-	else
+	else{
+	    this._is_editing=false;
 	    callback(p);
-
+	}
 	return p;
     }).catch((e)=>{
 	let p=Promise.resolve(e);
+	this._is_editing=false;
 	callback(p);
 	return p;
     });
@@ -1087,15 +1088,13 @@ Director.prototype._do_discard=function()
     if(!path)
 	return Promise.reject('discard');
     
-    return Promise.any([API.read_anno(path)]).then(
+    return API.read_anno(path).then(
 	(anno)=>{
 	    this._show_anno_(anno,true);
 	    return Promise.resolve('discard');
 	}
     ).catch(
-	(e)=>{
-	    console.log(e);
-	}
+	(e)=>console.log(e)
     );
 }
 Director.prototype._do_dispose=function()
@@ -1119,9 +1118,7 @@ Director.prototype._do_dispose=function()
 	    }
 	    return Promise.resolve('dispose');
 	},
-	(e)=>{
-	    console.log(e);
-	}
+	(e)=>console.log(e)
     );
 }
 
@@ -1151,26 +1148,27 @@ Director.prototype._set_anno_mark_=async function(disposed)
 
 Director.prototype._do_paste_=async function()
 {
+    if(!this._is_editing)
+	return Promise.resolve(null);
+    
     let anno=this._last_commit_anno;
 
     //
     // To enable the undo feature of textarea,
     // paste the value from the clipboard instead of rewriting it directly
     //
-    await navigator.locks.request(
-	this._lock_renderer,
-	(lock)=>{
-	    API.copy_anno(anno).then(
+    return API.copy_anno(anno).then(
+	(r)=>{
+	    this.element.caption.focus();
+	    return API.paste().then(
 		(r)=>{
-		    this.element.caption.focus();
-		    API.paste();
 		    this._set_anno_changed();
+		    return Promise.resolve('paste');
 		},
-		(e)=>{
-		    console.log(e);
-		}
+		(e)=>e
 	    );
-	}
+	},
+	(e)=>console.log(e)
     );
 }
 
@@ -1219,22 +1217,15 @@ Director.prototype._unset_lock=function()
 
 Director.prototype._copy_anno_=async function(anno)
 {
-    await navigator.locks.request(
-	this._lock_renderer,
-	(lock)=>{
-	    this._last_commit_anno=anno;
-	    
-	    let cls=this.element.btn.edit_paste.getAttribute('class')
-	    cls=cls.replaceAll('fa-regular','fa-solid');
-	    this.element.btn.edit_paste.setAttribute('class',cls);
-	}
-    );
+    this._last_commit_anno=anno;
     
-    API.copy_anno(anno).then(
-	(r)=>{},
-	(e)=>{
-	    console.log(e);
-	}
+    let cls=this.element.btn.edit_paste.getAttribute('class')
+    cls=cls.replaceAll('fa-regular','fa-solid');
+    this.element.btn.edit_paste.setAttribute('class',cls);
+    
+    return API.copy_anno(anno).then(
+	(r)=>r,
+	(e)=>console.log(e)
     );
 }
 
@@ -1246,14 +1237,16 @@ Director.prototype._set_config=function(c)
 	this._config=c;
 }
 
-window.onload=async function(event){
-    document.director=new Director(await API.get_config());
-    API.on_start_loading(
-	document.director._set_loading_.bind(document.director)
-    );
-
-    document.director.cmd_dir_open();
-};
+window.onload=function(event){
+    API.get_config().then(
+	(c)=>document.director=new Director(c)
+    ).then((r)=>{
+	API.on_start_loading(
+	    document.director._set_loading_.bind(document.director)
+	);
+	document.director.cmd_dir_open();
+    });
+}
 window.onbeforeunload=function(event){
     const self=document.director;
     if(!(self._current_image && self._has_changed))
@@ -1262,13 +1255,17 @@ window.onbeforeunload=function(event){
     event.preventDefault();
     self._edit_end().then((x)=>{
 	if(x=='continue'){
-	    self.element.caption.focus()
+	    self.element.caption.focus();
 	}
 	else{
+	    self.element.filelist.focus();
+	    //
+	    // I want to know more smart way....
+	    //
 	    setTimeout(
 		window.close,
-		5
+		EVENT_OVERWRITE_INTERVAL
 	    );
 	}
-    });
+    })
 }
