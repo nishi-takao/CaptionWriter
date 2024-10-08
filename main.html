@@ -58,10 +58,23 @@
 <button id='btn-edit-dispose' class="fa-regular fa-trash-can"
  title="Dispose the existing caption" tabindex='-1'></button>
 </p>
+
+<dialog id='popup-dialog' class='confirm'>
+<h1>Confirmation</h1>
+<p>Editing is in progress.<br/>
+How do you process them?</p>
+<form method="dialog">
+<button type="submit" value="continue">Continue Editing</button>
+<button type="submit" value="commit">Commit</button>
+<button type="submit" value="discard">Discard</button>
+</form>
+</dialog>
+
 <div id='lock' tabindex='-1'>
 <p id='lock-message'></p>
 <p id='lock-bottom'></p>
 </div>
+
 </body>
 
 </html>

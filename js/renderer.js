@@ -16,6 +16,197 @@ function escapeHTML(str)
 	.replace(/`/g, '&#x60;');
 }
 
+////////////////////////////////////////////////////////////////////////
+//
+// HTML dialog wrapper
+//
+function Dialog(base_element)
+{
+    this._elm={};
+    if(!base_element)
+	this._build_base();
+    else{
+	this._elm.base=base_element;
+	this._elm.title=this._elm.base.getElementsByTagName('h1')[0];
+	this._elm.msg=this._elm.base.getElementsByTagName('p')[0];
+	this._elm.form=this._elm.base.getElementsByTagName('form')[0];
+    }
+    this._status=null;
+    this._retval=null;
+
+    this._elm.buttons=[];
+    this._promise={};
+}
+Dialog.prototype.base_element=function()
+{
+    return this._elm.base;
+}
+Dialog.prototype.base_element=function()
+{
+    return this._elm.base;
+}
+Dialog.prototype.show=function(opts={})
+{
+    this._clear();
+    this._build(opts);
+
+    this._promise.body=new Promise(
+	(resolve,reject)=>{
+	    this._promise.resolve=resolve;
+	    this._promise.reject=reject;
+	    this._elm.base.showModal();
+	    this._elm.buttons._autofocus.focus();
+	    this._status='opend';
+	}
+    );
+    
+    return this._promise.body;
+}
+
+Dialog.prototype._build_base=function()
+{
+    this._elm.base=document.document.createElement('dialog');
+    this._elm.title=document.document.createElement('h1');
+    this._elm.msg=document.document.createElement('p');
+    this._elm.form=document.document.createElement('form');
+    this._elm.form.setAttribute('method','dialog');
+
+    this._elm.base.appendChild(this._elm.title);
+    this._elm.base.appendChild(this._elm.msg);
+    this._elm.base.appendChild(this._elm.form);
+
+    return this._elm.base;
+}
+
+Dialog.prototype._build=function(opts)
+{
+    let cls=opts.type||'info';
+    this._elm.base.setAttribute('class',cls);
+    
+    if(opts.title==undefined){
+	switch(cls){
+	case 'question':
+	    opts.title='Question';
+	    break;
+	case 'confirm':
+	    opts.title='Confirmation';
+	    break;
+	case 'warn':
+	    opts.title='Warning';
+	    break;
+	case 'error':
+	    opts.title='Error';
+	    break;
+	default:
+	    opts.title='Information';
+	}
+    }
+    this._elm.title.textContent=opts.title;
+    this._elm.msg.textContent=opts.message;
+    
+    let btns=opts.buttons||['OK'];
+    let default_id=parseInt(opts.defaultId||0);
+    let cancel_id=parseInt(opts.cancelId||0);
+    for(let idx=0;idx<btns.length;idx++){
+	let b=btns[idx];
+	if(typeof(b)=='string')
+	    b=[b,idx];
+	else
+	    b=Object.entries(b)[0];
+	
+	let el=document.createElement('button');
+	el.dataset.idx=idx;
+	el.setAttribute('type','button');
+	el.setAttribute('formmethod','dialog');
+	el.setAttribute('tabindex','0');
+	if(idx==default_id){
+	    el.setAttribute('autofocus','');
+	    this._elm.buttons._autofocus=el;
+	}
+	el.textContent=b[0];
+	el.value=b[1];
+	if(idx==cancel_id)
+	    this._retval=el.value;
+	el.addEventListener(
+	    "click",
+	    (event)=>{
+		this._status='confirmed';
+		this._retval=el.value;
+		this._elm.base.close();
+	    }
+	)
+	el.addEventListener(
+	    "keydown",
+	    (event)=>{
+		switch(event.key){
+		case 'ArrowLeft':
+		    this._move_lr(el,-1);
+		    break;
+		case 'ArrowRight':
+		    this._move_lr(el,1);
+		    break;
+		}
+	    }
+	)
+	
+	this._elm.buttons.push(el);
+	this._elm.form.appendChild(el);
+    }
+    
+    this._elm.base.addEventListener(
+	'close',
+	this._on_close.bind(this),
+	{once:true}
+    );
+    
+    return this._elm.base;
+}
+Dialog.prototype._clear=function()
+{
+    this._elm.base.removeEventListener(
+	'close',
+	this._on_close.bind(this),
+	{once:true}
+    );
+
+    while(this._elm.form.firstChild)
+	this._elm.form.removeChild(this._elm.form.firstChild);
+    this._elm.buttons.length=0;
+    delete this._elm.buttons._autofocus;
+    
+    this._retval=null;
+    this._status=null;
+    delete this._promise.body;
+    delete this._promise.resolve;
+    delete this._promise.reject;
+}
+Dialog.prototype._on_close=function(event)
+{
+    if(this._status!='confirmed')
+	this._status='canceled';
+    
+    if(this._promise.resolve)
+	this._promise.resolve(this._retval);
+}
+Dialog.prototype._move_lr=function(el,pos)
+{
+    let i=parseInt(el.dataset.idx)+pos;
+    if(i<0)
+	i=this._elm.buttons.length+i;
+    i=i%this._elm.buttons.length;
+
+    this._elm.buttons[i].focus();
+}
+//
+// end of Dialog
+//
+////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
+//
+// UI Director
+//
 function Director(config={})
 {
     this._config={};
@@ -42,6 +233,7 @@ function Director(config={})
     this.element.src_img=document.getElementById('target-image');
     this.element.loading_img=document.getElementById('loading-image');
     this.element.caption=document.getElementById('caption');
+    this.element.dialog=document.getElementById('popup-dialog');
     this.element.lock=document.getElementById('lock');
     
     //
@@ -66,6 +258,8 @@ function Director(config={})
 	this.element.btn.edit_discard,
 	this.element.btn.edit_dispose
     ];
+
+    this._dialog=new Dialog(this.element.dialog);
 
     // size caches
     this.el_size={};
@@ -330,16 +524,24 @@ Director.prototype._add_listeners=function()
     this.element.caption.addEventListener(
 	'blur',
 	(event)=>{
-	    if(document.activeElement==event.srcElement)
+	    if(document.activeElement==event.target)
 		return;
-	    
+
 	    if(this._current_image){
-		if(!this._edit_buttons.includes(event.relatedTarget)){
+		if(!(
+		    this._edit_buttons.includes(
+			event.relatedTarget
+		    )||this._dialog._elm.buttons.includes(
+			event.relatedTarget
+		    )||(event.relatedTarget==null && 
+			this._dialog._status=='opend')
+		)){
 		    if(event.relatedTarget==this.element.lock){
 			this.element.lock.dataset.relatedTarget=
 			    this.element.caption.id;
 			return;
 		    }
+		    
 		    this._set_edit_btn_inactive();
 		    this._onEditEnd(
 			this.element.filelist.focus.bind(
@@ -353,12 +555,12 @@ Director.prototype._add_listeners=function()
     );
 
     const CtrlUpDown=(step,promise)=>{
-	promise.then(()=>{
+	promise.then((r)=>{
 	    this.cmd_image_open(
 		this._list_cursor_pos+step,
 		true
 	    ).then((r)=>{
-		this.element.caption.focus()
+		this.element.caption.focus();
 	    })
 	});
     }
@@ -430,7 +632,7 @@ Director.prototype._add_listeners=function()
 		if(event.ctrlKey){
 		    event.preventDefault();
 		    event.stopPropagation();
-		    this._unset_lock();
+		    this._unset_screenlock();
 		}
 		break;
 	    }
@@ -501,7 +703,7 @@ Director.prototype._add_listeners=function()
 		if(event.ctrlKey){
 		    event.preventDefault();
 		    event.stopPropagation();
-		    this._set_lock();
+		    this._toggle_screenlock();
 		}
 		break;
 	    default:
@@ -567,7 +769,6 @@ Director.prototype._add_listeners=function()
 	    if(!(this._current_image && this._has_changed))
 		return;
 	    
-	    console.log(document.director._onclose_action);
 	    event.preventDefault();
 	    this._edit_end().then((x)=>{
 		if(x=='continue'){
@@ -818,7 +1019,17 @@ Director.prototype._edit_end=function()
 	if(this._config.auto_commit)
 	    return 1;
 	else{
+	    /*
 	    return await API.show_dialog({
+		title:'Confirmation',
+		type:'question',
+		message:`Editing is in progress.
+How do you process them?`,
+		buttons:['Continue editing','Commit','Discard'],
+		defaultId:0,
+	    })
+	    */
+	    return await this._dialog.show({
 		title:'Confirmation',
 		type:'question',
 		message:`Editing is in progress.
@@ -829,16 +1040,15 @@ How do you process them?`,
 	}
     })().then(
 	(x)=>{
-	    switch(x){
-	    case 0:
-		return Promise.resolve('continue');
-		break;
+	    switch(parseInt(x)){
 	    case 1:
 		return this._do_commit();
 		break;
 	    case 2:
 		return this._do_discard();
 		break;
+	    default:
+		return Promise.resolve('continue');
 	    }
 	}
     );
@@ -1081,11 +1291,11 @@ Director.prototype._do_dir_open=function(is_rescan)
 Director.prototype._do_commit=function()
 {
     if(!this._current_image)
-	return Promise.reject('commit');
+	return Promise.resolve('commit');
     
     let path=this._current_image.dataset.path;
     if(path==null)
-	return Promise.reject('commit');
+	return Promise.resolve('commit');
     
     let anno=this.element.caption.value;
     if(anno){
@@ -1100,25 +1310,22 @@ Director.prototype._do_commit=function()
 	    },
 	    (e)=>{
 		console.log(e);
+		return Promise.reject('commit');
 	    }
 	);
     }
     else{
-	let el=this._get_list_item(this._list_cursor_pos);
-	if((!el) || (!el.dataset.hasAnnotation))
-	    return Promise.reject('dispose');
-	
 	return this._do_dispose();
     }
 }
 Director.prototype._do_discard=function()
 {
     if(!this._current_image)
-	return Promise.reject('discard');
+	return Promise.resolve('discard');
 
     let path=this._current_image.dataset.path;
     if(!path)
-	return Promise.reject('discard');
+	return Promise.resolve('discard');
     
     return API.read_anno(path).then(
 	(anno)=>{
@@ -1126,32 +1333,49 @@ Director.prototype._do_discard=function()
 	    return Promise.resolve('discard');
 	}
     ).catch(
-	(e)=>console.log(e)
+	(e)=>{
+	    console.log(e)
+	    return Promise.reject('discard');
+	}
     );
 }
 Director.prototype._do_dispose=function()
 {
     if(!this._current_image)
-	return Promise.reject('dispose');
+	return Promise.resolve('dispose');
     
     let path=this._current_image.dataset.path;
     if(path==null)
-	return Promise.reject('dispose');
+	return Promise.resolve('dispose');
     
     let el=this._get_list_item(this._list_cursor_pos);
     if((!el) ||(!el.dataset.hasAnnotation))
-	return Promise.reject('dispose');
+	return Promise.resolve('dispose');
     
-    return API.rm_anno(path).then(
- 	(r)=>{
-	    if(r){
-		this._set_anno_mark_(true);
-		this._unset_anno_changed();
-	    }
+    return this._dialog.show({
+	type:'confirm',
+	message:'Are you sure you want to dispose the saved caption?',
+	buttons:['Cancel','OK'],
+	defaultId:0
+    }).then((x)=>{
+	if(x=='1'){
+	    return API.rm_anno(path).then(
+ 		(r)=>{
+		    if(r){
+			this._set_anno_mark_(true);
+			this._unset_anno_changed();
+		    }
+		    return Promise.resolve('dispose');
+		},
+		(e)=>{
+		    console.log(e);
+		    return Promise.reject('dispose');
+		}
+	    );
+	}
+	else
 	    return Promise.resolve('dispose');
-	},
-	(e)=>console.log(e)
-    );
+    });
 }
 
 Director.prototype._set_anno_mark_=async function(disposed)
@@ -1204,49 +1428,6 @@ Director.prototype._do_paste_=async function()
     );
 }
 
-
-Director.prototype._set_loading_=async function(args)
-{
-    await navigator.locks.request(
-	this._lock_renderer,
-	{ ifAvailable: true },
-	(lock)=>{
-	    this._erase_body(
-		(args && args.type=='file') ? true : false,
-		true
-	    );
-	    
-	    this.element.loading_img.style.display='inline-block';
-	}
-    );
-}
-Director.prototype._unset_loading=function()
-{
-    this.element.loading_img.style.display='none';
-}
-
-Director.prototype._set_lock=function()
-{
-    this.element.lock.style.display='block';
-    this.element.lock.setAttribute('tabindex','-1');
-    this._set_loading_({type:'file'});
-    this.element.lock.focus();
-}
-Director.prototype._unset_lock=function()
-{
-    this.element.lock.style.display='none';
-    this._unset_loading();
-    let r=this.element.lock.dataset.relatedTarget;
-    if(r){
-	let el=document.getElementById(r);
-	delete this.element.lock.dataset.relatedTarget;
-	if(el)
-	    el.focus();
-    }
-    else
-	this.element.filelist.focus();
-}
-
 Director.prototype._copy_anno_=async function(anno)
 {
     this._last_commit_anno=anno;
@@ -1269,12 +1450,78 @@ Director.prototype._set_config=function(c)
 	this._config=c;
 }
 
+
+Director.prototype._set_loading_=async function(args)
+{
+    await navigator.locks.request(
+	this._lock_renderer,
+	{ ifAvailable: true },
+	(lock)=>{
+	    this._erase_body(
+		(args && args.type=='file') ? true : false,
+		true
+	    );
+	    
+	    this.element.loading_img.style.display='inline-block';
+	}
+    );
+}
+Director.prototype._unset_loading=function()
+{
+    this.element.loading_img.style.display='none';
+}
+
+Director.prototype._show_error=function(args)
+{
+    this._dialog.show({
+	type:'error',
+	title:args.title,
+	message:args.message
+    })
+}
+
+Director.prototype._set_screenlock=function()
+{
+    this.element.lock.style.display='block';
+    this.element.lock.setAttribute('tabindex','-1');
+    this._set_loading_({type:'file'});
+    this.element.lock.focus();
+}
+Director.prototype._unset_screenlock=function()
+{
+    this.element.lock.style.display='none';
+    this._unset_loading();
+    let r=this.element.lock.dataset.relatedTarget;
+    if(r){
+	let el=document.getElementById(r);
+	delete this.element.lock.dataset.relatedTarget;
+	if(el)
+	    el.focus();
+    }
+    else
+	this.element.filelist.focus();
+}
+Director.prototype._toggle_screenlock=function()
+{
+    if(this.element.lock.style.display=='block')
+	this._unset_screenlock();
+    else
+	this._set_screenlock();
+}
+//
+// end of Director
+//
+////////////////////////////////////////////////////////////////////////
+
 window.onload=function(event){
     API.get_config().then(
 	(c)=>document.director=new Director(c)
     ).then((r)=>{
 	API.reg_on_start_loading_handler(
 	    document.director._set_loading_.bind(document.director)
+	);
+	API.reg_on_error_handler(
+	    document.director._show_error.bind(document.director)
 	);
 	API.reg_on_close_handler(
 	    ()=>{

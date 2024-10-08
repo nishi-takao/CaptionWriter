@@ -265,13 +265,16 @@ Ipc.handle(
 	    );
 	    retval=await item.write_annotation(anno);
 	}
-	if(!retval)
-	    Dialog.showErrorBox(
-		'I/O Error',
-		`Some errors occurred when writing.
-See the console for details.
-`
+	if(!retval){
+	    win.webContents.send(
+		'show-error',
+		{
+		    title:'I/O Error',
+		    message:`Some errors occurred when writing.
+See the console for details.`
+		}
 	    );
+	}
 	return retval;
     }
 );
@@ -282,43 +285,27 @@ Ipc.handle(
 	let retval=null;
 	
 	if(item){
-	    retval=Dialog.showMessageBoxSync(
-		win,
+	    event.sender.send(
+		'ack-open',
 		{
-		    title:'Confirmation',
-		    type:'question',
-		    message:'Are you sure you want to dispose the saved caption?',
-		    buttons:['cancel','OK'],
-		    defaultId:0
+		    type:'file',
+		    target:path
 		}
 	    );
-	    if(retval){
-		event.sender.send(
-		    'ack-open',
+	    retval=item.remove_annotation();
+	    if(!retval){
+		win.webContents.send(
+		    'show-error',
 		    {
-			type:'file',
-			target:path
+			title:'I/O Error',
+			message:`Some errors occurred when writing.
+See the console for details.`
 		    }
 		);
-		retval=item.remove_annotation();
-		if(!retval)
-		    Dialog.showErrorBox(
-			'I/O Error',
-			`Some errors occurred when removing.
-See the console for details.
-`
-		    );
 	    }
 	}
 	
 	return retval;
-    }
-);
-
-Ipc.handle(
-    'show-dialog',
-    (event,opt)=>{
-	return Dialog.showMessageBoxSync(win,opt);
     }
 );
 

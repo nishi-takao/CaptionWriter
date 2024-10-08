@@ -17,6 +17,15 @@ contextBridge.exposeInMainWorld(
 		);
 	    },
 	    
+	    reg_on_error_handler:(callback)=>{
+		ipcRenderer.on(
+		    'show-error',
+		    (event,args)=>{
+			callback(args);
+		    }
+		);
+	    },
+	    
 	    reg_on_close_handler:(callback)=>{
 		ipcRenderer.on(
 		    'on-close',
@@ -25,7 +34,7 @@ contextBridge.exposeInMainWorld(
 		    }
 		);
 	    },
-	    
+
 	    get_config:()=>{
 		return ipcRenderer.invoke('get-config');
 	    },
@@ -46,9 +55,6 @@ contextBridge.exposeInMainWorld(
 	    },
 	    rm_anno:(path)=>{
 		return ipcRenderer.invoke('rm-anno',path);
-	    },
-	    show_dialog:(opt)=>{
-		return ipcRenderer.invoke('show-dialog',opt);
 	    },
 	    undo:()=>{
 		return ipcRenderer.invoke('undo');
