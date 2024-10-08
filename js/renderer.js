@@ -266,6 +266,8 @@ function Director(config={})
 
     this._add_listeners();
 
+    this._apply_config();
+
     this._unset_anno_changed();
 }
 
@@ -409,7 +411,6 @@ Director.prototype.cmd_edit_dispose=function()
 	this.element.filelist.focus();
     });
 }
-
 
 Director.prototype._add_listeners=function()
 {
@@ -609,7 +610,7 @@ Director.prototype._add_listeners=function()
     );
     this.element.caption.setAttribute(
 	'title',
-	`[Ctrl-s]: Commit and Continue Editing
+	`[Ctrl-s]: Commit and Keep Editing
 [Ctrl-RET]: Commit
 [ESC]: Discard
 [TAB]: Exit Editing
@@ -792,6 +793,20 @@ Director.prototype._add_listeners=function()
 	    })
 	}
     );
+}
+
+Director.prototype._apply_config=function(cfg=this._config)
+{
+    if(cfg.spellcheck)	
+	this.element.caption.removeAttribute('spellcheck');
+    else
+	this.element.caption.setAttribute('spellcheck','false');
+    
+    if(cfg.autocomplete)	
+	this.element.caption.removeAttribute('autocomplete');
+    else
+	this.element.caption.setAttribute('autocomplete','off');
+
 }
 
 Director.prototype._add_text_to_title=function(el,text)
@@ -1019,22 +1034,12 @@ Director.prototype._edit_end=function()
 	if(this._config.auto_commit)
 	    return 1;
 	else{
-	    /*
-	    return await API.show_dialog({
-		title:'Confirmation',
-		type:'question',
-		message:`Editing is in progress.
-How do you process them?`,
-		buttons:['Continue editing','Commit','Discard'],
-		defaultId:0,
-	    })
-	    */
 	    return await this._dialog.show({
 		title:'Confirmation',
 		type:'question',
 		message:`Editing is in progress.
 How do you process them?`,
-		buttons:['Continue editing','Commit','Discard'],
+		buttons:['Keep Editing','Commit','Discard'],
 		defaultId:0,
 	    })
 	}
@@ -1199,7 +1204,6 @@ Director.prototype._set_anno_changed=function()
     this._set_btn_active(this.element.btn.edit_undo);
     this._set_btn_active(this.element.btn.edit_redo);
     this._set_btn_active(this.element.btn.edit_discard);
-    //this._set_btn_active(this.element.btn.edit_dispose);
 }
 Director.prototype._unset_anno_changed=function()
 {
@@ -1352,12 +1356,14 @@ Director.prototype._do_dispose=function()
     if((!el) ||(!el.dataset.hasAnnotation))
 	return Promise.resolve('dispose');
     
-    return this._dialog.show({
-	type:'confirm',
-	message:'Are you sure you want to dispose the saved caption?',
-	buttons:['Cancel','OK'],
-	defaultId:0
-    }).then((x)=>{
+    let p=this._config.dispose_without_confirm ? Promise.resolve('1') :
+	this._dialog.show({
+	    type:'confirm',
+	    message:'Are you sure you want to dispose the saved caption?',
+	    buttons:['Cancel','OK'],
+	    defaultId:0
+	});
+    return p.then((x)=>{
 	if(x=='1'){
 	    return API.rm_anno(path).then(
  		(r)=>{

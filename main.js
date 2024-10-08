@@ -58,28 +58,43 @@ let config={
     },
     UI:{
 	auto_commit:true,
+	dispose_without_confirm:false,
+	spellcheck:true,
+	autocomplete:false,
 	lockscreen_message:''
     },
     cwd:'.'
 }
 
+const deep_merge=(src,dst)=>{
+    Object.entries(dst).forEach(([k,v])=>{
+	if(typeof(v)=='object'){
+	    if(!src[k])
+		src[k]={};
+	    deep_merge(src[k],v);
+	}
+	else
+	    src[k]=v;
+    })
+};
+				
 try{
     let c=JSON.parse(FS.readFileSync(CONFIG_FILE,'utf8'));
-    Object.assign(config,c);
+    deep_merge(config,c);
 }
-catch(e){}
-
+catch(e){
+}
 
 if(!config.ignore_last_status){
     try{
 	let s=JSON.parse(FS.readFileSync(LAST_STAT_FILE,'utf8'));
-	Object.assign(config,s);
+	deep_merge(config,s);
     }
     catch(e){}
 }
 
 const AUTHOR=require(Path.join(__dirname,'package.json')).author;
-const COPYRIGHT_YEAR=2024;
+const COPYRIGHT_YEAR='2024';
 config.UI.appInfo={
     name:App.getName(),
     version:App.getVersion(),
