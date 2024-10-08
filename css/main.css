@@ -415,29 +415,28 @@ dialog h1:before{
     border-radius:50%;
     font-size:72px;
     font-family:"Font Awesome 6 Free";
-    content: "\f06a";
+    box-shadow:1px 1px 2px rgba(0,0,0,0.65);
+    content: "\f05a";
+    background-color:white;
     font-weight:900;
-    color:white;
+    color:#606070;
 }
 dialog.question h1:before,
 dialog.confirm h1:before{
-    background-color:white;
-    box-shadow:1px 1px 2px rgba(0,0,0,0.65);
     content: "\f059";
+    background-color:white;
     font-weight:900;
     color:#5050ff;
 }
 dialog.warn h1:before{
-    background-color:black;
-    box-shadow:1px 1px 2px rgba(0,0,0,0.65);
     content: "\f06a";
+    background-color:black;
     font-weight:900;
     color:#ffff50;
 }
 dialog.error h1:before{
-    background-color:white;
-    box-shadow:1px 1px 2px rgba(0,0,0,0.65);
     content: "\f057";
+    background-color:white;
     font-weight:900;
     color:#ff5050;
 }
