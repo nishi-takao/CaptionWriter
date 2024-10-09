@@ -22,30 +22,6 @@ const RC_PREFIX='.capw';
 const CONFIG_FILE=Path.join(HOME,RC_PREFIX);
 const LAST_STAT_FILE=Path.join(HOME,RC_PREFIX+'.last-stat');
 
-function getDriveList()
-{
-    if(process.platform=='win32'){
-	try{
-	    return require('child_process')
-		.execSync(
-		    'Get-WmiObject -Class Win32_logicaldisk|'+
-			'Format-Wide -Property DeviceID -Column 1',
-		    {shell:'powershell'}
-		)
-		.toString('utf8')
-		.trim()
-		.split(/\s+/);
-	}
-	catch(e){
-	    console.log(e);
-	    // on error, returns the current drive
-	    return [process.cwd().slice(0,2)];
-	}
-    }
-    else
-	return null;
-}
-
 let config={
     DEBUG:false,
     save_last_status:true,
