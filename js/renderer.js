@@ -226,43 +226,43 @@ function Director(config={})
     //
     // object caches
     //
-    this.element={};
-    this.element.cwd=document.getElementById('cwd');
-    this.element.filelist=document.getElementById('filelist');
-    this.element.img_area=document.getElementById('image-area');
-    this.element.src_img=document.getElementById('target-image');
-    this.element.loading_img=document.getElementById('loading-image');
-    this.element.caption=document.getElementById('caption');
-    this.element.dialog=document.getElementById('popup-dialog');
-    this.element.lock=document.getElementById('lock');
+    this._elm={};
+    this._elm.cwd=document.getElementById('cwd');
+    this._elm.filelist=document.getElementById('filelist');
+    this._elm.img_area=document.getElementById('image-area');
+    this._elm.src_img=document.getElementById('target-image');
+    this._elm.loading_img=document.getElementById('loading-image');
+    this._elm.caption=document.getElementById('caption');
+    this._elm.dialog=document.getElementById('popup-dialog');
+    this._elm.lock=document.getElementById('lock');
     
     //
     // buttons
     //
-    this.element.btn={};
-    this.element.btn.list_open=document.getElementById('btn-list-open');
-    this.element.btn.list_rescan=document.getElementById('btn-list-rescan');
+    this._elm.btn={};
+    this._elm.btn.list_open=document.getElementById('btn-list-open');
+    this._elm.btn.list_rescan=document.getElementById('btn-list-rescan');
 
-    this.element.btn.edit_commit=document.getElementById('btn-edit-commit');
-    this.element.btn.edit_paste=document.getElementById('btn-edit-paste');
-    this.element.btn.edit_undo=document.getElementById('btn-edit-undo');
-    this.element.btn.edit_redo=document.getElementById('btn-edit-redo');
-    this.element.btn.edit_discard=document.getElementById('btn-edit-discard');
-    this.element.btn.edit_dispose=document.getElementById('btn-edit-dispose');
+    this._elm.btn.edit_commit=document.getElementById('btn-edit-commit');
+    this._elm.btn.edit_paste=document.getElementById('btn-edit-paste');
+    this._elm.btn.edit_undo=document.getElementById('btn-edit-undo');
+    this._elm.btn.edit_redo=document.getElementById('btn-edit-redo');
+    this._elm.btn.edit_discard=document.getElementById('btn-edit-discard');
+    this._elm.btn.edit_dispose=document.getElementById('btn-edit-dispose');
     
     this._edit_buttons=[
-	this.element.btn.edit_commit,
-	this.element.btn.edit_paste,
-	this.element.btn.edit_undo,
-	this.element.btn.edit_redo,
-	this.element.btn.edit_discard,
-	this.element.btn.edit_dispose
+	this._elm.btn.edit_commit,
+	this._elm.btn.edit_paste,
+	this._elm.btn.edit_undo,
+	this._elm.btn.edit_redo,
+	this._elm.btn.edit_discard,
+	this._elm.btn.edit_dispose
     ];
 
-    this._dialog=new Dialog(this.element.dialog);
+    this._dialog=new Dialog(this._elm.dialog);
 
     // size caches
-    this.el_size={};
+    this._el_size={};
 
     this._add_listeners();
 
@@ -273,7 +273,7 @@ function Director(config={})
 
 Director.prototype.cmd_dir_open=function(force)
 {
-    if(!(force || this._is_btn_active(this.element.btn.list_open)))
+    if(!(force || this._is_btn_active(this._elm.btn.list_open)))
 	return;
     
     this._do_dir_open(false);
@@ -281,7 +281,7 @@ Director.prototype.cmd_dir_open=function(force)
 
 Director.prototype.cmd_dir_rescan=function()
 {
-    if(!this._is_btn_active(this.element.btn.list_rescan))
+    if(!this._is_btn_active(this._elm.btn.list_rescan))
 	return;
     
     this._do_dir_open(true);
@@ -337,7 +337,7 @@ Director.prototype.cmd_edit_start=function()
     if(!this._list_size)
 	return;
 
-    let el=this.element.caption;
+    let el=this._elm.caption;
     let len=el.value.length;
     el.focus();
     el.setSelectionRange(len,len);
@@ -352,7 +352,7 @@ Director.prototype.cmd_edit_copy_anno=function()
     if((!el) || (!el.dataset.hasAnnotation))
 	return;
 
-    let anno=this.element.caption.value;
+    let anno=this._elm.caption.value;
     if(!anno)
 	return;
 
@@ -363,16 +363,16 @@ Director.prototype.cmd_edit_clear_copied_anno=function()
 {
     this._last_commit_anno=null;
 
-    let cls=this.element.btn.edit_paste.getAttribute('class')
+    let cls=this._elm.btn.edit_paste.getAttribute('class')
     cls=cls.replaceAll('fa-solid','fa-regular');
-    this.element.btn.edit_paste.setAttribute('class',cls)
+    this._elm.btn.edit_paste.setAttribute('class',cls)
 }
 
 
 Director.prototype.cmd_edit_commit=function()
 {
     this._do_commit().then((r)=>{
-	this.element.filelist.focus();
+	this._elm.filelist.focus();
     });
 }
 
@@ -387,14 +387,14 @@ Director.prototype.cmd_edit_paste_tlc=function()
 Director.prototype.cmd_edit_undo=function()
 {
     API.undo().then(()=>{
-	this.element.caption.focus();
+	this._elm.caption.focus();
     });
 }
 
 Director.prototype.cmd_edit_redo=function()
 {
     API.redo().then(()=>{
-	this.element.caption.focus();
+	this._elm.caption.focus();
     });
 }
 
@@ -406,9 +406,9 @@ Director.prototype.cmd_edit_discard=function()
 Director.prototype.cmd_edit_dispose=function()
 {
     this._do_dispose().then((r)=>{
-	this.element.filelist.focus();
+	this._elm.filelist.focus();
     }).catch((e)=>{
-	this.element.filelist.focus();
+	this._elm.filelist.focus();
     });
 }
 
@@ -417,32 +417,32 @@ Director.prototype._add_listeners=function()
     //
     // buttons
     //
-    this.element.cwd.addEventListener(
+    this._elm.cwd.addEventListener(
 	'click',
 	this.cmd_dir_open.bind(this));
-    this.element.btn.list_open.addEventListener(
+    this._elm.btn.list_open.addEventListener(
 	'click',
 	this.cmd_dir_open.bind(this));
-    this.element.btn.list_rescan.addEventListener(
+    this._elm.btn.list_rescan.addEventListener(
 	'click',
 	this.cmd_dir_rescan.bind(this));
 
-    this.element.btn.edit_commit.addEventListener(
+    this._elm.btn.edit_commit.addEventListener(
 	'click',
 	this.cmd_edit_commit.bind(this));
-    this.element.btn.edit_paste.addEventListener(
+    this._elm.btn.edit_paste.addEventListener(
 	'click',
 	this.cmd_edit_paste_tlc.bind(this));
-    this.element.btn.edit_undo.addEventListener(
+    this._elm.btn.edit_undo.addEventListener(
 	'click',
 	this.cmd_edit_undo.bind(this));
-    this.element.btn.edit_redo.addEventListener(
+    this._elm.btn.edit_redo.addEventListener(
 	'click',
 	this.cmd_edit_redo.bind(this));
-    this.element.btn.edit_discard.addEventListener(
+    this._elm.btn.edit_discard.addEventListener(
 	'click',
 	this.cmd_edit_discard.bind(this));
-    this.element.btn.edit_dispose.addEventListener(
+    this._elm.btn.edit_dispose.addEventListener(
 	'click',
 	this.cmd_edit_dispose.bind(this));
 
@@ -450,7 +450,7 @@ Director.prototype._add_listeners=function()
     //
     // filelist keys
     //
-    this.element.filelist.addEventListener(
+    this._elm.filelist.addEventListener(
 	'keydown',
 	(event)=>{
 	    switch(event.key){
@@ -485,7 +485,7 @@ Director.prototype._add_listeners=function()
 	    }
 	}
     );
-    this.element.filelist.setAttribute(
+    this._elm.filelist.setAttribute(
 	'title',
 	`[\u2191]: List Up
 [\u2193]: List Down
@@ -495,13 +495,13 @@ Director.prototype._add_listeners=function()
 [Ctrl-DEL]: Dispose the Existing Caption
 `
    );
-   this.element.filelist.addEventListener(
+   this._elm.filelist.addEventListener(
 	'blur',
        (event)=>{
 	   if((!event.relatedTarget)||
-	      (event.relatedTarget==this.element.caption &&
+	      (event.relatedTarget==this._elm.caption &&
 	       !this._current_image))
-	       this.element.filelist.focus();
+	       this._elm.filelist.focus();
        }
    );
 
@@ -509,8 +509,8 @@ Director.prototype._add_listeners=function()
     //
     // text-area
     //
-    const non_focus_relateds=this._edit_buttons.concat([this.element.lock]);
-    this.element.caption.addEventListener(
+    const non_focus_relateds=this._edit_buttons.concat([this._elm.lock]);
+    this._elm.caption.addEventListener(
 	'focus',
 	(event)=>{
 	    if(this._current_image){
@@ -518,11 +518,11 @@ Director.prototype._add_listeners=function()
 		this._edit_start();
 	    }
 	    else
-		this.element.filelist.focus();
+		this._elm.filelist.focus();
 	}
     );
 
-    this.element.caption.addEventListener(
+    this._elm.caption.addEventListener(
 	'blur',
 	(event)=>{
 	    if(document.activeElement==event.target)
@@ -537,16 +537,16 @@ Director.prototype._add_listeners=function()
 		    )||(event.relatedTarget==null && 
 			this._dialog._status=='opend')
 		)){
-		    if(event.relatedTarget==this.element.lock){
-			this.element.lock.dataset.relatedTarget=
-			    this.element.caption.id;
+		    if(event.relatedTarget==this._elm.lock){
+			this._elm.lock.dataset.relatedTarget=
+			    this._elm.caption.id;
 			return;
 		    }
 		    
 		    this._set_edit_btn_inactive();
 		    this._onEditEnd(
-			this.element.filelist.focus.bind(
-			    this.element.filelist,
+			this._elm.filelist.focus.bind(
+			    this._elm.filelist,
 			    null
 			)
 		    );
@@ -561,11 +561,11 @@ Director.prototype._add_listeners=function()
 		this._list_cursor_pos+step,
 		true
 	    ).then((r)=>{
-		this.element.caption.focus();
+		this._elm.caption.focus();
 	    })
 	});
     }
-    this.element.caption.addEventListener(
+    this._elm.caption.addEventListener(
 	'keydown',
 	(event)=>{
 	    switch(event.key){
@@ -595,20 +595,20 @@ Director.prototype._add_listeners=function()
 		break;
 	    case 'Escape':
 		event.preventDefault();
-		let el=this.element.caption;
+		let el=this._elm.caption;
 		if(el.selectionStart!=el.selectionEnd)
 		    el.selectionEnd=el.selectionStart
 		else if(this._has_changed)
 		    this._do_discard();
 		else
-		    this.element.filelist.focus();
+		    this._elm.filelist.focus();
 		break;
 	    default:
 		//console.log(event);
 	    }
 	}
     );
-    this.element.caption.setAttribute(
+    this._elm.caption.setAttribute(
 	'title',
 	`[Ctrl-s]: Commit and Keep Editing
 [Ctrl-RET]: Commit
@@ -623,7 +623,7 @@ Director.prototype._add_listeners=function()
     //
     // lock screen
     //
-    this.element.lock.addEventListener(
+    this._elm.lock.addEventListener(
 	'keypress',
 	(event)=>{
 	    event.preventDefault();
@@ -717,35 +717,35 @@ Director.prototype._add_listeners=function()
     // add short cut key description to tool tip
     //
     this._add_text_to_title(
-	this.element.btn.list_open,
+	this._elm.btn.list_open,
 	'Ctrl-o'
     );
     this._add_text_to_title(
-	this.element.btn.list_rescan,
+	this._elm.btn.list_rescan,
 	'F5 or Ctrl-r'
     );
     this._add_text_to_title(
-	this.element.btn.edit_commit,
+	this._elm.btn.edit_commit,
 	'Ctrl-RET'
     );
     this._add_text_to_title(
-	this.element.btn.edit_paste,
+	this._elm.btn.edit_paste,
 	'Ctrl-Shift-v'
     );
     this._add_text_to_title(
-	this.element.btn.edit_undo,
+	this._elm.btn.edit_undo,
 	'Ctrl-z'
     );
     this._add_text_to_title(
-	this.element.btn.edit_redo,
+	this._elm.btn.edit_redo,
 	'Ctrl-y'
     );
     this._add_text_to_title(
-	this.element.btn.edit_discard,
+	this._elm.btn.edit_discard,
 	'Ctrl-Shift-d'
     );
     this._add_text_to_title(
-	this.element.btn.edit_dispose,
+	this._elm.btn.edit_dispose,
 	'Ctrl-DEL'
     );
     
@@ -775,11 +775,11 @@ Director.prototype._add_listeners=function()
 		if(x=='continue'){
 		    event.preventDefault();
 		    event.returnValue=false;
-		    this.element.caption.focus();
+		    this._elm.caption.focus();
 		    return event;
 		}
 		else{
-		    this.element.filelist.focus();
+		    this._elm.filelist.focus();
 		    //
 		    // I want to know more smart way....
 		    //
@@ -798,14 +798,14 @@ Director.prototype._add_listeners=function()
 Director.prototype._apply_config=function(cfg=this._config)
 {
     if(cfg.spellcheck)	
-	this.element.caption.removeAttribute('spellcheck');
+	this._elm.caption.removeAttribute('spellcheck');
     else
-	this.element.caption.setAttribute('spellcheck','false');
+	this._elm.caption.setAttribute('spellcheck','false');
     
     if(cfg.autocomplete)	
-	this.element.caption.removeAttribute('autocomplete');
+	this._elm.caption.removeAttribute('autocomplete');
     else
-	this.element.caption.setAttribute('autocomplete','off');
+	this._elm.caption.setAttribute('autocomplete','off');
 
 }
 
@@ -831,24 +831,24 @@ Director.prototype._resize_=async function()
 
 Director.prototype._fit_image=function()
 {
-    if(!this.el_size.image_area_pad_w)
-	this.el_size.image_area_pad_w=parseInt(
-	    window.getComputedStyle(this.element.img_area)['padding-left']
+    if(!this._el_size.image_area_pad_w)
+	this._el_size.image_area_pad_w=parseInt(
+	    window.getComputedStyle(this._elm.img_area)['padding-left']
 	)+parseInt(
-	    window.getComputedStyle(this.element.img_area)['padding-right']
+	    window.getComputedStyle(this._elm.img_area)['padding-right']
 	);
-    if(!this.el_size.image_area_pad_h)
-	this.el_size.image_area_pad_h=parseInt(
-	    window.getComputedStyle(this.element.img_area)['padding-top']
+    if(!this._el_size.image_area_pad_h)
+	this._el_size.image_area_pad_h=parseInt(
+	    window.getComputedStyle(this._elm.img_area)['padding-top']
 	)+parseInt(
-	    window.getComputedStyle(this.element.img_area)['padding-bottom']
+	    window.getComputedStyle(this._elm.img_area)['padding-bottom']
 	);
     
-    const Pw=this.element.img_area.offsetWidth;
-    const Ph=this.element.img_area.offsetHeight;
+    const Pw=this._elm.img_area.offsetWidth;
+    const Ph=this._elm.img_area.offsetHeight;
     
-    let cw=Pw-this.el_size.image_area_pad_w;
-    let ch=Ph-this.el_size.image_area_pad_h;
+    let cw=Pw-this._el_size.image_area_pad_w;
+    let ch=Ph-this._el_size.image_area_pad_h;
     
     if(!this._current_image)
 	return [cw,ch];
@@ -914,14 +914,14 @@ Director.prototype._rendering_=async function(imagelist,keep_image)
 	this.cmd_image_open(last_anno_idx==null ? 0 : last_anno_idx,true);
     
     this._set_list_btn_active();
-    this.element.filelist.focus();
+    this._elm.filelist.focus();
 }
 
 Director.prototype._set_list_btn_active=function()
 {
-    this._set_btn_active(this.element.cwd);
-    this._set_btn_active(this.element.btn.list_open);
-    this._set_btn_active(this.element.btn.list_rescan);
+    this._set_btn_active(this._elm.cwd);
+    this._set_btn_active(this._elm.btn.list_open);
+    this._set_btn_active(this._elm.btn.list_rescan);
 }
 
 
@@ -937,14 +937,14 @@ Director.prototype._erase_body=function(keep_list,keep_img)
     // clear header
     //
     this.cwd=null;
-    this.element.cwd.innerText='';
-    this.element.cwd.removeAttribute('title');
+    this._elm.cwd.innerText='';
+    this._elm.cwd.removeAttribute('title');
     
     //
     // clear list
     //
-    while(this.element.filelist.firstChild)
-	this.element.filelist.removeChild(this.element.filelist.firstChild);
+    while(this._elm.filelist.firstChild)
+	this._elm.filelist.removeChild(this._elm.filelist.firstChild);
     this._list_cursor_pos=null;
 }
 
@@ -956,8 +956,8 @@ Director.prototype._set_cwd=function(cwd)
     if(len>MAX_DIRNAME_LEN)
 	str='...'+str.substring(len-MAX_DIRNAME_LEN-3);
 
-    this.element.cwd.textContent=str;
-    this.element.cwd.setAttribute('title',escapeHTML(cwd));
+    this._elm.cwd.textContent=str;
+    this._elm.cwd.setAttribute('title',escapeHTML(cwd));
 }
 
 Director.prototype._build_filelist=function(imagelist)
@@ -992,17 +992,17 @@ Director.prototype._build_filelist=function(imagelist)
 				this.cmd_image_open.bind(this,idx,false),
 				false);
 	    
-	    this.element.filelist.appendChild(li);
+	    this._elm.filelist.appendChild(li);
 	    
 	    idx+=1;
 	},this);
-	this._set_btn_active(this.element.caption);
+	this._set_btn_active(this._elm.caption);
     }
     else{
 	let li=document.createElement('li');
 	li.setAttribute('class','no-image');
-	this.element.filelist.appendChild(li);
-	this._set_btn_inactive(this.element.caption);
+	this._elm.filelist.appendChild(li);
+	this._set_btn_inactive(this._elm.caption);
 	this._list_size=0;
     }
 
@@ -1018,7 +1018,7 @@ Director.prototype._edit_start=function()
     if(this._has_changed)
 	this._set_anno_changed()
     else{
-	this.element.caption.addEventListener(
+	this._elm.caption.addEventListener(
 	    'input',
 	    this._set_anno_changed.bind(this),
 	    {once:true}
@@ -1069,7 +1069,7 @@ Director.prototype._onEditEnd=function(callback,promise=this._edit_end())
 	if(x=='continue'){
 	    // Need a little bit moment to refocus
 	    setTimeout(()=>{
-		this.element.caption.focus()
+		this._elm.caption.focus()
 	    },EVENT_OVERWRITE_INTERVAL);
 	}
 	else{
@@ -1087,7 +1087,7 @@ Director.prototype._onEditEnd=function(callback,promise=this._edit_end())
 
 Director.prototype._idx2path=function(idx)
 {
-    let el=this.element.filelist.getElementsByTagName('li')[idx];
+    let el=this._elm.filelist.getElementsByTagName('li')[idx];
     if(el)
 	return el.dataset.path;
     else
@@ -1101,7 +1101,7 @@ Director.prototype._show_image_=async function(idx,obj,keep_focus)
 	    this._close_current_image();
 
 	    this._set_list_select(idx);
-	    let el=this.element.src_img;
+	    let el=this._elm.src_img;
 	    el.setAttribute('src',obj.image.body);
 	    el.dataset.originalWidth=obj.image.width;
 	    el.dataset.originalHeight=obj.image.height;
@@ -1116,18 +1116,18 @@ Director.prototype._show_image_=async function(idx,obj,keep_focus)
 	    this._set_anno(obj.anno);
 	    el=this._get_list_item(idx);
 	    if(el && el.dataset.hasAnnotation)
-		this._set_btn_active(this.element.btn.edit_dispose);
+		this._set_btn_active(this._elm.btn.edit_dispose);
 	    else
-		this._set_btn_inactive(this.element.btn.edit_dispose);
+		this._set_btn_inactive(this._elm.btn.edit_dispose);
 	    
 	    this._unset_loading();
 	}
     );
 
     if(keep_focus)
-	this.element.filelist.focus();
+	this._elm.filelist.focus();
     else
-	this.element.caption.focus();
+	this._elm.caption.focus();
 }
 Director.prototype._show_anno_=async function(anno,keep_focus)
 {
@@ -1139,11 +1139,11 @@ Director.prototype._show_anno_=async function(anno,keep_focus)
 	}
     );
     if(!keep_focus)
-	this.element.caption.focus();
+	this._elm.caption.focus();
 }
 Director.prototype._set_anno=function(anno,event)
 {
-    let el=this.element.caption;
+    let el=this._elm.caption;
     if(anno)
 	el.value=anno;
     else
@@ -1158,7 +1158,7 @@ Director.prototype._close_current_image=function()
     if(!this._current_image)
 	return;
     
-    this.element.caption.value='';
+    this._elm.caption.value='';
     this._unset_anno_changed();
     
     this._unset_list_select(this._current_image.dataset.idx);
@@ -1168,7 +1168,7 @@ Director.prototype._close_current_image=function()
 
 Director.prototype._get_list_item=function(idx)
 {
-    return this.element.filelist.getElementsByTagName('li')[parseInt(idx)];
+    return this._elm.filelist.getElementsByTagName('li')[parseInt(idx)];
 }
 Director.prototype._set_list_select=function(idx)
 {
@@ -1200,22 +1200,22 @@ Director.prototype._unset_list_select=function(idx)
 Director.prototype._set_anno_changed=function()
 {
     this._has_changed=true;
-    this._set_btn_active(this.element.btn.edit_commit);
-    this._set_btn_active(this.element.btn.edit_undo);
-    this._set_btn_active(this.element.btn.edit_redo);
-    this._set_btn_active(this.element.btn.edit_discard);
+    this._set_btn_active(this._elm.btn.edit_commit);
+    this._set_btn_active(this._elm.btn.edit_undo);
+    this._set_btn_active(this._elm.btn.edit_redo);
+    this._set_btn_active(this._elm.btn.edit_discard);
 }
 Director.prototype._unset_anno_changed=function()
 {
     let c=this._has_changed;
     this._has_changed=false;
     
-    this._set_btn_inactive(this.element.btn.edit_commit);
-    this._set_btn_inactive(this.element.btn.edit_undo);
-    this._set_btn_inactive(this.element.btn.edit_redo);
-    this._set_btn_inactive(this.element.btn.edit_discard);
+    this._set_btn_inactive(this._elm.btn.edit_commit);
+    this._set_btn_inactive(this._elm.btn.edit_undo);
+    this._set_btn_inactive(this._elm.btn.edit_redo);
+    this._set_btn_inactive(this._elm.btn.edit_discard);
     
-    this.element.caption.removeEventListener(
+    this._elm.caption.removeEventListener(
 	'input',
 	this._set_anno_changed.bind(this),
 	{once:true}
@@ -1226,15 +1226,15 @@ Director.prototype._unset_anno_changed=function()
 Director.prototype._set_edit_btn_active=function()
 {
     if(this._last_commit_anno)
-	this._set_btn_active(this.element.btn.edit_paste);
+	this._set_btn_active(this._elm.btn.edit_paste);
 }    
 Director.prototype._set_edit_btn_inactive=function()
 {
     // reject dispose button
     this._edit_buttons.filter(
-	(x)=>x!=this.element.btn.edit_dispose
+	(x)=>x!=this._elm.btn.edit_dispose
     ).forEach((obj)=>{
-	if(obj!=this.element.btn.edit_dispose)
+	if(obj!=this._elm.btn.edit_dispose)
 	    this._set_btn_inactive(obj);
     });
 } 
@@ -1253,8 +1253,8 @@ Director.prototype._is_btn_active=function(obj)
 }
 Director.prototype._set_all_inactive=function()
 {
-    this._set_btn_inactive(this.element.cwd);
-    Object.values(this.element.btn).forEach((el)=>{
+    this._set_btn_inactive(this._elm.cwd);
+    Object.values(this._elm.btn).forEach((el)=>{
 	this._set_btn_inactive(el);
     });
 }
@@ -1282,7 +1282,7 @@ Director.prototype._do_dir_open=function(is_rescan)
 	    }
 	).then(()=>{
 	    if(editing)
-		this.element.caption.focus();
+		this._elm.caption.focus();
 	});
     }
 
@@ -1301,7 +1301,7 @@ Director.prototype._do_commit=function()
     if(path==null)
 	return Promise.resolve('commit');
     
-    let anno=this.element.caption.value;
+    let anno=this._elm.caption.value;
     if(anno){
 	return API.write_anno(path,anno).then(
  	    (r)=>{
@@ -1394,12 +1394,12 @@ Director.prototype._set_anno_mark_=async function(disposed)
 	    if(el){
 		if(disposed){
 		    delete el.dataset.hasAnnotation;
-		    this.element.caption.value='';
-		    this._set_btn_inactive(this.element.btn.edit_dispose);
+		    this._elm.caption.value='';
+		    this._set_btn_inactive(this._elm.btn.edit_dispose);
 		}
 		else{
 		    el.dataset.hasAnnotation='true';
-		    this._set_btn_active(this.element.btn.edit_dispose);
+		    this._set_btn_active(this._elm.btn.edit_dispose);
 		}
 		this._unset_anno_changed();
 	    }
@@ -1421,7 +1421,7 @@ Director.prototype._do_paste_=async function()
     //
     return API.copy_anno(anno).then(
 	(r)=>{
-	    this.element.caption.focus();
+	    this._elm.caption.focus();
 	    return API.paste().then(
 		(r)=>{
 		    this._set_anno_changed();
@@ -1438,15 +1438,16 @@ Director.prototype._copy_anno_=async function(anno)
 {
     this._last_commit_anno=anno;
     
-    let cls=this.element.btn.edit_paste.getAttribute('class')
+    let cls=this._elm.btn.edit_paste.getAttribute('class')
     cls=cls.replaceAll('fa-regular','fa-solid');
-    this.element.btn.edit_paste.setAttribute('class',cls);
+    this._elm.btn.edit_paste.setAttribute('class',cls);
     
     return API.copy_anno(anno).then(
 	(r)=>r,
 	(e)=>console.log(e)
     );
 }
+
 
 Director.prototype._set_config=function(c)
 {
@@ -1468,13 +1469,13 @@ Director.prototype._set_loading_=async function(args)
 		true
 	    );
 	    
-	    this.element.loading_img.style.display='inline-block';
+	    this._elm.loading_img.style.display='inline-block';
 	}
     );
 }
 Director.prototype._unset_loading=function()
 {
-    this.element.loading_img.style.display='none';
+    this._elm.loading_img.style.display='none';
 }
 
 Director.prototype._show_error=function(args)
@@ -1488,28 +1489,28 @@ Director.prototype._show_error=function(args)
 
 Director.prototype._set_screenlock=function()
 {
-    this.element.lock.style.display='block';
-    this.element.lock.setAttribute('tabindex','-1');
+    this._elm.lock.style.display='block';
+    this._elm.lock.setAttribute('tabindex','-1');
     this._set_loading_({type:'file'});
-    this.element.lock.focus();
+    this._elm.lock.focus();
 }
 Director.prototype._unset_screenlock=function()
 {
-    this.element.lock.style.display='none';
+    this._elm.lock.style.display='none';
     this._unset_loading();
-    let r=this.element.lock.dataset.relatedTarget;
+    let r=this._elm.lock.dataset.relatedTarget;
     if(r){
 	let el=document.getElementById(r);
-	delete this.element.lock.dataset.relatedTarget;
+	delete this._elm.lock.dataset.relatedTarget;
 	if(el)
 	    el.focus();
     }
     else
-	this.element.filelist.focus();
+	this._elm.filelist.focus();
 }
 Director.prototype._toggle_screenlock=function()
 {
-    if(this.element.lock.style.display=='block')
+    if(this._elm.lock.style.display=='block')
 	this._unset_screenlock();
     else
 	this._set_screenlock();
