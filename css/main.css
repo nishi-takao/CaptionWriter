@@ -58,8 +58,12 @@ html,body{
     overflow:hidden;
     height:100%;
 }
-body{
+#main-base{
     position:relative;
+    margin:0;
+    padding:0;
+    width:100%;
+    height:100%;
     display:grid;
     grid-template-rows:52px 1fr 1fr 104px;
     grid-template-columns:182px 1fr;
@@ -172,57 +176,6 @@ body{
     margin:0;
     padding:0;
 }
-#loading-image{
-    display:none;
-    position:absolute;
-    margin:0;
-    padding:0;
-    font-size:200px;
-    left:calc(50% - 100px);
-    top:calc(50% - 100px);
-    color:white;
-    text-shadow:5px 5px 3px #202020;
-    opacity:0.65;
-    animation-name:spin;
-    animation-duration:3s;
-    animation-iteration-count:infinite;
-    animation-timing-function:linear;
-    z-index:1;
-}
-@keyframes spin{
-  12.5%{
-    transform: scale(0.75) rotate(90deg);
-    text-shadow:4px -4px 2px #202020;
-  }
-  25%{
-    transform: scale(0.5) rotate(180deg);
-    text-shadow:-3px -3px 1px #202020;
-  }
-  37.5%{
-    transform: scale(0.75) rotate(270deg);
-    text-shadow:-4px 4px 2px #202020;
-  }
-  50%{
-    transform: scale(1.0) rotate(360deg);
-    text-shadow:5px 5px 3px #202020;
-  }
-  62.5%{
-    transform: scale(1.125) rotate(450deg);
-    text-shadow:6px -6px 4px #202020;
-  }
-  75%{
-    transform: scale(1.25) rotate(540deg);
-    text-shadow:-7px -7px 5px #202020;
-  }
-  87.5%{
-    transform: scale(1.125) rotate(630deg);
-    text-shadow:-6px 6px 4px #202020;
-  }
-  100%{
-    transform: scale(1.0) rotate(720deg);
-    text-shadow:5px 5px 3px #202020;
-  }
-}
 
 #caption-area{
     grid-area:caption;
@@ -316,56 +269,7 @@ button:hover{
 #list-navi button[disabled]:hover{
     color:#707070;
 }
-#lock{
-    display:none;
-    position:absolute;
-    left:0;
-    top:0;
-    width:100%;
-    height:100%;
-    margin:0;
-    padding:0;
-    overflow:clip;
-    background-color:#ffffff00;
-    backdrop-filter:blur(8px);
-}
-#lock:focus{
-    outline:none;
-}
-#lock-message{
-    position:absolute;
-    display:inline-block;
-    overflow:clip;
-    margin:0;
-    padding:0;
-    text-align:center;
-    font-family:Roboto;
-    font-weight:bold;
-    font-size:36pt;
-    color:white;
-    text-shadow:5px 5px 12px black,
-		-5px 5px 12px black,
-		5px -5px 12px black,
-		-5px -5px 12px black;
-    width:calc(100% - 182px);
-    height:2em;
-    line-height:2em;
-    left:182px;
-    top:calc((50% - 52px)/2 + 125px + 1em);
-}
-#lock-bottom{
-    position:absolute;
-    display:inline-block;
-    overflow:clip;
-    margin:0;
-    padding:0;
-    text-align:right;
-    font-family:Roboto;
-    color:#505060;
-    font-size:8pt;
-    right:12px;
-    bottom:8px;
-}
+
 dialog{
     position:absolute;
     box-sizing:border-box;
@@ -479,4 +383,130 @@ dialog button:focus{
     border:solid 3px #ffa000;
     background-color:#303050;
     color:white;
+}
+
+#lock-screen{
+    display:none;
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+    height:100%;
+    margin:0;
+    padding:0;
+    overflow:clip;
+    z-index:1;
+}
+#lock-screen.loading{
+    display:block;
+    background-color:#00000040;
+    backdrop-filter: blur(1px);
+}
+#lock-screen.locking{
+    display:block;
+    background-color:#ffffff00;
+    backdrop-filter:blur(8px);
+}
+#lock-screen:focus{
+    outline:none;
+}
+
+#lock-loading{
+    position:absolute;
+    margin:0;
+    padding:0;
+    width:calc(100% - 182px);
+    height:calc(50% - 78px); /* (100%-(52px+104px))/2 */
+    left:182px;
+    top: 52px;
+}
+#lock-loading span{
+    position:absolute;
+    display:inline-block;
+    margin:0;
+    padding:0;
+    font-size:200px;
+    left:calc(50% - 100px);
+    top:calc(50% - 100px);
+    color:white;
+    text-shadow:5px 5px 3px #202020;
+    opacity:0.65;
+    animation-name:pulsespin;
+    animation-duration:3s;
+    animation-iteration-count:infinite;
+    animation-timing-function:linear;
+}
+@keyframes pulsespin{
+  12.5%{
+    transform: scale(0.75) rotate(90deg);
+    text-shadow:4px -4px 2px #202020;
+  }
+  25%{
+    transform: scale(0.5) rotate(180deg);
+    text-shadow:-3px -3px 1px #202020;
+  }
+  37.5%{
+    transform: scale(0.75) rotate(270deg);
+    text-shadow:-4px 4px 2px #202020;
+  }
+  50%{
+    transform: scale(1.0) rotate(360deg);
+    text-shadow:5px 5px 3px #202020;
+  }
+  62.5%{
+    transform: scale(1.125) rotate(450deg);
+    text-shadow:6px -6px 4px #202020;
+  }
+  75%{
+    transform: scale(1.25) rotate(540deg);
+    text-shadow:-7px -7px 5px #202020;
+  }
+  87.5%{
+    transform: scale(1.125) rotate(630deg);
+    text-shadow:-6px 6px 4px #202020;
+  }
+  100%{
+    transform: scale(1.0) rotate(720deg);
+    text-shadow:5px 5px 3px #202020;
+  }
+}
+
+#lock-message{
+    position:absolute;
+    display:inline-block;
+    overflow:clip;
+    margin:0;
+    padding:0;
+    text-align:center;
+    font-family:Roboto;
+    font-weight:bold;
+    font-size:36pt;
+    color:white;
+    text-shadow:5px 5px 12px black,
+		-5px 5px 12px black,
+		5px -5px 12px black,
+		-5px -5px 12px black;
+    width:calc(100% - 182px);
+    height:2em;
+    line-height:2em;
+    left:182px;
+    top:calc((50% - 52px)/2 + 125px + 1em);
+}
+#lock-bottom{
+    position:absolute;
+    display:inline-block;
+    overflow:clip;
+    margin:0;
+    padding:0;
+    text-align:right;
+    font-family:Roboto;
+    color:#505060;
+    font-size:8pt;
+    right:12px;
+    bottom:8px;
+}
+.loading #lock-message,
+.loading #lock-bottom
+{
+    display:none;
 }

@@ -4,6 +4,7 @@
 const API=window.extra.api;
 const MAX_DIRNAME_LEN=64;
 const EVENT_OVERWRITE_INTERVAL=3;
+const INTERVAL_UNTIL_LOADING_SCREEN=10;
 
 function escapeHTML(str)
 {
@@ -213,6 +214,7 @@ function Director(config={})
     this._set_config(config);
     
     this._lock_renderer='lock-renderer';
+    this._lock_api='lock-api';
     
     this.cwd=null;
     this._list_size=0;
@@ -227,14 +229,16 @@ function Director(config={})
     // object caches
     //
     this._elm={};
+    this._elm._main_base=document.getElementById('main-base');
     this._elm.cwd=document.getElementById('cwd');
     this._elm.filelist=document.getElementById('filelist');
     this._elm.img_area=document.getElementById('image-area');
     this._elm.src_img=document.getElementById('target-image');
-    this._elm.loading_img=document.getElementById('loading-image');
+    //this._elm.loading_img=document.getElementById('loading-image');
     this._elm.caption=document.getElementById('caption');
     this._elm.dialog=document.getElementById('popup-dialog');
-    this._elm.lock=document.getElementById('lock');
+    this._elm.scrlk=document.getElementById('lock-screen');
+
     
     //
     // buttons
@@ -295,9 +299,9 @@ Director.prototype.cmd_list_up=function()
     if(this._list_cursor_pos==null)
 	this._list_cursor_pos=1;
     
-    this.cmd_image_open(
+    this._do_image_open(
 	this._list_cursor_pos-1,
-	true
+	this._elm.filelist
     );
 }
 
@@ -309,26 +313,9 @@ Director.prototype.cmd_list_down=function()
     if(this._list_cursor_pos==null)
 	this._list_cursor_pos=-1;
     
-    this.cmd_image_open(
+    this._do_image_open(
 	this._list_cursor_pos+1,
-	true
-    );
-}
-
-Director.prototype.cmd_image_open=function(idx,keep_focus)
-{
-    let path=this._idx2path(idx);
-    if(!path)
-	return Promise.resolve(null);
-
-    return API.open_img(path).then(
-	(result)=>{
-	    if(result)
-		return this._show_image_(idx,result,keep_focus);
-	    
-	    return Promise.resolve(result);
-	},
-	(e)=>console.log(e)
+	this._elm.filelist
     );
 }
 
@@ -345,18 +332,20 @@ Director.prototype.cmd_edit_start=function()
 
 Director.prototype.cmd_edit_copy_anno=function()
 {
-    if((!this._list_size)||(this._list_cursor_pos==null))
-	return;
+    this._lock_with_loading((lock)=>{
+	if((!this._list_size)||(this._list_cursor_pos==null))
+	    return Promise.resolve();
     
-    let el=this._get_list_item(this._list_cursor_pos);
-    if((!el) || (!el.dataset.hasAnnotation))
-	return;
+	let el=this._get_list_item(this._list_cursor_pos);
+	if((!el) || (!el.dataset.hasAnnotation))
+	    return Promise.resolve();
+	
+	let anno=this._elm.caption.value;
+	if(!anno)
+	    return Promise.resolve();
 
-    let anno=this._elm.caption.value;
-    if(!anno)
-	return;
-
-    this._copy_anno_(anno);
+	return this._copy_anno(anno);
+    });
 }
 
 Director.prototype.cmd_edit_clear_copied_anno=function()
@@ -410,6 +399,28 @@ Director.prototype.cmd_edit_dispose=function()
     }).catch((e)=>{
 	this._elm.filelist.focus();
     });
+}
+
+Director.prototype._lock_with_loading=function(promise,lock)
+{
+    if(lock)
+	return promise(lock);
+    else{
+	let timer;
+	return navigator.locks.request(
+	    this._lock_api,
+	    (lock)=>{
+		timer=setTimeout(
+		    this._set_loading.bind(this),
+		    INTERVAL_UNTIL_LOADING_SCREEN
+		);
+		return promise(lock);
+	    }
+	).finally((r)=>{
+	    clearTimeout(timer);
+	    this._unset_loading();
+	});
+    }
 }
 
 Director.prototype._add_listeners=function()
@@ -509,7 +520,7 @@ Director.prototype._add_listeners=function()
     //
     // text-area
     //
-    const non_focus_relateds=this._edit_buttons.concat([this._elm.lock]);
+    const non_focus_relateds=this._edit_buttons.concat([this._elm.scrlk]);
     this._elm.caption.addEventListener(
 	'focus',
 	(event)=>{
@@ -537,8 +548,8 @@ Director.prototype._add_listeners=function()
 		    )||(event.relatedTarget==null && 
 			this._dialog._status=='opend')
 		)){
-		    if(event.relatedTarget==this._elm.lock){
-			this._elm.lock.dataset.relatedTarget=
+		    if(event.relatedTarget==this._elm.scrlk){
+			this._elm.scrlk.dataset.relatedTarget=
 			    this._elm.caption.id;
 			return;
 		    }
@@ -557,9 +568,9 @@ Director.prototype._add_listeners=function()
 
     const CtrlUpDown=(step,promise)=>{
 	promise.then((r)=>{
-	    this.cmd_image_open(
+	    this._do_image_open(
 		this._list_cursor_pos+step,
-		true
+		this._elm.filelist
 	    ).then((r)=>{
 		this._elm.caption.focus();
 	    })
@@ -619,33 +630,7 @@ Director.prototype._add_listeners=function()
 `
     );
     
-
-    //
-    // lock screen
-    //
-    this._elm.lock.addEventListener(
-	'keypress',
-	(event)=>{
-	    event.preventDefault();
-	    event.stopPropagation();
-	    switch(event.key){
-	    case 'L':
-		if(event.ctrlKey){
-		    event.preventDefault();
-		    event.stopPropagation();
-		    this._unset_screenlock();
-		}
-		break;
-	    }
-	}
-    );
-    document.getElementById('lock-message').textContent=
-	this._config.lockscreen_messgae||'[Ctrl-Shift-l] to unlock';
-
-    document.getElementById('lock-bottom').textContent=
-	`${this._config.appInfo.name} ${this._config.appInfo.version}
-\u00a9 ${this._config.appInfo.year} by ${this._config.appInfo.author}`;
-     
+    
     //
     // global short-cut keys
     //
@@ -881,11 +866,10 @@ Director.prototype._fit_image=function()
     return [cw,ch];
 }
 
-Director.prototype._rendering_=async function(imagelist,keep_image)
+Director.prototype._rendering=function(imagelist,keep_image)
 {
     if(!imagelist){
 	this._set_list_btn_active();
-	this._unset_loading();
 	return;
     }
 
@@ -893,26 +877,25 @@ Director.prototype._rendering_=async function(imagelist,keep_image)
 	keep_image=true;
     
     let last_anno_idx=null;
-    await navigator.locks.request(
-	this._lock_renderer,
-	(lock)=>{
-	    this._erase_body(false,keep_image);
-	    
-	    this._set_cwd(imagelist.cwd);
-	    last_anno_idx=this._build_filelist(imagelist);
-	    
-	    this._fit_image();
-	}
-    );
-
-    this._unset_loading();
+    this._erase_body(false,keep_image);
+    
+    this._set_cwd(imagelist.cwd);
+    last_anno_idx=this._build_filelist(imagelist);
+    
+    this._fit_image();
+    
     if(keep_image && this._list_cursor_pos!=null){
 	let el=this._get_list_item(this._list_cursor_pos);
 	el.focus();
     }
-    else if(this._list_size)
-	this.cmd_image_open(last_anno_idx==null ? 0 : last_anno_idx,true);
-    
+    else if(this._list_size){
+	this._do_image_open.bare.call(
+	    this,
+	    last_anno_idx==null ? 0 : last_anno_idx
+	);
+	this._elm.filelist.focus();
+    }
+
     this._set_list_btn_active();
     this._elm.filelist.focus();
 }
@@ -988,9 +971,10 @@ Director.prototype._build_filelist=function(imagelist)
 		this._list_cursor_pos=idx;
 	    }
 	    
-	    li.addEventListener("click",
-				this.cmd_image_open.bind(this,idx,false),
-				false);
+	    li.addEventListener(
+		'click',
+		this._do_image_open.bind(this,idx,false)
+	    );
 	    
 	    this._elm.filelist.appendChild(li);
 	    
@@ -1093,6 +1077,32 @@ Director.prototype._idx2path=function(idx)
     else
 	return el;
 }
+
+Director.prototype._show_image=function(idx,obj)
+{
+    this._close_current_image();
+    
+    this._set_list_select(idx);
+    let el=this._elm.src_img;
+    el.setAttribute('src',obj.image.body);
+    el.dataset.originalWidth=obj.image.width;
+    el.dataset.originalHeight=obj.image.height;
+    el.dataset.path=this._idx2path(idx);
+    el.dataset.idx=idx;
+    
+    
+    this._current_image=el;
+    this._fit_image();
+    this._current_image.style.display='inline-block';
+    
+    this._set_anno(obj.anno);
+    el=this._get_list_item(idx);
+    if(el && el.dataset.hasAnnotation)
+	this._set_btn_active(this._elm.btn.edit_dispose);
+    else
+	this._set_btn_inactive(this._elm.btn.edit_dispose);
+}
+/*
 Director.prototype._show_image_=async function(idx,obj,keep_focus)
 {
     await navigator.locks.request(
@@ -1129,18 +1139,7 @@ Director.prototype._show_image_=async function(idx,obj,keep_focus)
     else
 	this._elm.caption.focus();
 }
-Director.prototype._show_anno_=async function(anno,keep_focus)
-{
-    await navigator.locks.request(
-	this._lock_renderer,
-	(lock)=>{
-	    this._set_anno(anno);
-	    this._unset_loading();
-	}
-    );
-    if(!keep_focus)
-	this._elm.caption.focus();
-}
+*/
 Director.prototype._set_anno=function(anno,event)
 {
     let el=this._elm.caption;
@@ -1271,44 +1270,84 @@ Director.prototype._do_dir_open=function(is_rescan)
     const dir=is_rescan ? this.cwd : null;
     const callback=()=>{
 	this._set_all_inactive();
-	API.open_dir(dir).then(
-	    (result)=>{
-		return this._rendering_(result,is_rescan);
-	    },
-	    (e)=>{
+	this._lock_with_loading(
+	    (lock)=>API.open_dir(dir).then((result)=>{
+		this._rendering(result,is_rescan);
+		return Promise.resolve('dir-open');
+	    }).then(()=>{
+		if(editing)
+		    this._elm.caption.focus();
+		return Promise.resolve('dir-open');
+	    }).catch((e)=>{
 		console.log(e);
 		if(is_rescan)
-		    this._do_dir_open(false);
-	    }
-	).then(()=>{
-	    if(editing)
-		this._elm.caption.focus();
-	});
+		    return this._do_dir_open(false);
+		else
+		    return Promise.reject('dir-open');
+	    })
+	);
     }
-
     this._onEditEnd(
 	callback.bind(this),
 	promise
     );
 }
 
+Director.prototype._do_image_open=function(idx,focus_element)
+{
+    return this._lock_with_loading(
+	(lock)=>this._do_image_open.bare.call(this,idx).then(
+	    (r)=>{
+		if(focus_element?.focus)
+		    focus_element.focus();
+		else
+		    this._elm.caption.focus();
+		
+		return r;
+	    }
+	)
+    );
+}
+Director.prototype._do_image_open.bare=function(idx)
+{
+    let path=this._idx2path(idx);
+    if(!path)
+	return Promise.resolve();
+    
+    return API.open_img(path).then(
+	(result)=>{
+	    if(result){
+		this._show_image(idx,result);
+		return Promise.resolve('open-img');
+	    }
+	    else
+		return Promise.reject('open-img');
+	},
+	(e)=>console.log(e)
+    );
+}
+
 Director.prototype._do_commit=function()
 {
-    if(!this._current_image)
-	return Promise.resolve('commit');
+    return this._lock_with_loading(
+	(lock)=>this._do_commit.bare.call(this)
+    );
+}
+Director.prototype._do_commit.bare=function(path)
+{
+    if(!path){
+	path=this._current_image?.dataset?.path;
+	if(!path)
+	    return Promise.resolve();
+    }
     
-    let path=this._current_image.dataset.path;
-    if(path==null)
-	return Promise.resolve('commit');
-    
-    let anno=this._elm.caption.value;
+    let anno=this._elm.caption?.value;
     if(anno){
 	return API.write_anno(path,anno).then(
  	    (r)=>{
 		if(r){
-		    this._copy_anno_(anno);
-		    this._set_anno_mark_();
-		    this._unset_anno_changed();
+		    this._copy_anno(anno);
+		    this._set_anno_mark();
 		}
 		return Promise.resolve('commit');
 	    },
@@ -1319,21 +1358,28 @@ Director.prototype._do_commit=function()
 	);
     }
     else{
-	return this._do_dispose();
+	return this._do_dispose.bare.call(this,path);
     }
 }
+
+
 Director.prototype._do_discard=function()
 {
-    if(!this._current_image)
-	return Promise.resolve('discard');
-
-    let path=this._current_image.dataset.path;
-    if(!path)
-	return Promise.resolve('discard');
+    return this._lock_with_loading(
+	(lock)=>this._do_discard.bare.call(this)
+    );
+}
+Director.prototype._do_discard.bare=function(path)
+{
+    if(!path){
+	path=this._current_image?.dataset?.path;
+	if(!path)
+	    return Promise.resolve();
+    }
     
     return API.read_anno(path).then(
 	(anno)=>{
-	    this._show_anno_(anno,true);
+	    this._set_anno(anno);
 	    return Promise.resolve('discard');
 	}
     ).catch(
@@ -1343,19 +1389,26 @@ Director.prototype._do_discard=function()
 	}
     );
 }
+
+
 Director.prototype._do_dispose=function()
 {
-    if(!this._current_image)
-	return Promise.resolve('dispose');
-    
-    let path=this._current_image.dataset.path;
-    if(path==null)
-	return Promise.resolve('dispose');
+    return this._lock_with_loading(
+	(lock)=>this._do_dispose.bare.call(this)
+    );
+}
+Director.prototype._do_dispose.bare=function(path)
+{
+    if(!path){
+	path=this._current_image?.dataset.path;
+	if(path==null)
+	    return Promise.resolve();
+    }
     
     let el=this._get_list_item(this._list_cursor_pos);
     if((!el) ||(!el.dataset.hasAnnotation))
-	return Promise.resolve('dispose');
-    
+	return Promise.resolve();
+ 
     let p=this._config.dispose_without_confirm ? Promise.resolve('1') :
 	this._dialog.show({
 	    type:'confirm',
@@ -1363,12 +1416,13 @@ Director.prototype._do_dispose=function()
 	    buttons:['Cancel','OK'],
 	    defaultId:0
 	});
+    
     return p.then((x)=>{
 	if(x=='1'){
 	    return API.rm_anno(path).then(
  		(r)=>{
 		    if(r){
-			this._set_anno_mark_(true);
+			this._set_anno_mark(true);
 			this._unset_anno_changed();
 		    }
 		    return Promise.resolve('dispose');
@@ -1380,32 +1434,26 @@ Director.prototype._do_dispose=function()
 	    );
 	}
 	else
-	    return Promise.resolve('dispose');
+	    return this._do_discard.bare.call(this,path);
     });
 }
 
-Director.prototype._set_anno_mark_=async function(disposed)
+Director.prototype._set_anno_mark=function(disposed)
 {
-    await navigator.locks.request(
-	this._lock_renderer,
-	(lock)=>{
-	    this._unset_loading();
-	    let el=this._get_list_item(this._list_cursor_pos);
-	    if(el){
-		if(disposed){
-		    delete el.dataset.hasAnnotation;
-		    this._elm.caption.value='';
-		    this._set_btn_inactive(this._elm.btn.edit_dispose);
-		}
-		else{
-		    el.dataset.hasAnnotation='true';
-		    this._set_btn_active(this._elm.btn.edit_dispose);
-		}
-		this._unset_anno_changed();
-	    }
-	}
-    )
-    
+    let el=this._get_list_item(this._list_cursor_pos);
+    if(!el)
+	return;
+
+    if(disposed){
+	delete el.dataset.hasAnnotation;
+	this._elm.caption.value='';
+	this._set_btn_inactive(this._elm.btn.edit_dispose);
+    }
+    else{
+	el.dataset.hasAnnotation='true';
+	this._set_btn_active(this._elm.btn.edit_dispose);
+    }
+    this._unset_anno_changed();
 }
 
 Director.prototype._do_paste_=async function()
@@ -1434,7 +1482,7 @@ Director.prototype._do_paste_=async function()
     );
 }
 
-Director.prototype._copy_anno_=async function(anno)
+Director.prototype._copy_anno=function(anno)
 {
     this._last_commit_anno=anno;
     
@@ -1443,11 +1491,13 @@ Director.prototype._copy_anno_=async function(anno)
     this._elm.btn.edit_paste.setAttribute('class',cls);
     
     return API.copy_anno(anno).then(
-	(r)=>r,
-	(e)=>console.log(e)
+	(r)=>Promise.resolve('copy'),
+	(e)=>{
+	    console.log(e);
+	    return Promise.reject('copy');
+	}
     );
 }
-
 
 Director.prototype._set_config=function(c)
 {
@@ -1458,26 +1508,6 @@ Director.prototype._set_config=function(c)
 }
 
 
-Director.prototype._set_loading_=async function(args)
-{
-    await navigator.locks.request(
-	this._lock_renderer,
-	{ ifAvailable: true },
-	(lock)=>{
-	    this._erase_body(
-		(args && args.type=='file') ? true : false,
-		true
-	    );
-	    
-	    this._elm.loading_img.style.display='inline-block';
-	}
-    );
-}
-Director.prototype._unset_loading=function()
-{
-    this._elm.loading_img.style.display='none';
-}
-
 Director.prototype._show_error=function(args)
 {
     this._dialog.show({
@@ -1486,22 +1516,36 @@ Director.prototype._show_error=function(args)
 	message:args.message
     })
 }
+Director.prototype._set_loading=function(args)
+{
+    this._elm.scrlk.className='loading';
+}
+Director.prototype._unset_loading=function()
+{
+    this._elm.scrlk.className='none';
+}
 
 Director.prototype._set_screenlock=function()
 {
-    this._elm.lock.style.display='block';
-    this._elm.lock.setAttribute('tabindex','-1');
-    this._set_loading_({type:'file'});
-    this._elm.lock.focus();
+    document.getElementById('lock-message').textContent=
+	this._config.lockscreen_messgae||'[Ctrl-Shift-l] to unlock';
+
+    document.getElementById('lock-bottom').textContent=
+	`${this._config.appInfo.name} ${this._config.appInfo.version}
+\u00a9 ${this._config.appInfo.year} by ${this._config.appInfo.author}`;
+
+    this._elm.scrlk.setAttribute('tabindex','-1');
+    this._elm.scrlk.className='locking';
+    this._elm.scrlk.focus();
 }
 Director.prototype._unset_screenlock=function()
 {
-    this._elm.lock.style.display='none';
-    this._unset_loading();
-    let r=this._elm.lock.dataset.relatedTarget;
+    this._elm.scrlk.className='none';
+    this._elm.scrlk.removeAttribute('tabindex');
+    let r=this._elm.scrlk.dataset.relatedTarget;
     if(r){
 	let el=document.getElementById(r);
-	delete this._elm.lock.dataset.relatedTarget;
+	delete this._elm.scrlk.dataset.relatedTarget;
 	if(el)
 	    el.focus();
     }
@@ -1510,7 +1554,7 @@ Director.prototype._unset_screenlock=function()
 }
 Director.prototype._toggle_screenlock=function()
 {
-    if(this._elm.lock.style.display=='block')
+    if(this._elm.scrlk.className=='locking')
 	this._unset_screenlock();
     else
 	this._set_screenlock();
@@ -1524,9 +1568,6 @@ window.onload=function(event){
     API.get_config().then(
 	(c)=>document.director=new Director(c)
     ).then((r)=>{
-	API.reg_on_start_loading_handler(
-	    document.director._set_loading_.bind(document.director)
-	);
 	API.reg_on_error_handler(
 	    document.director._show_error.bind(document.director)
 	);

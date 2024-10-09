@@ -182,16 +182,8 @@ Ipc.handle(
 	    );
 	}
 	
-	if(path){
-	    event.sender.send(
-		'ack-open',
-		{
-		    type:'dir',
-		    target:path[0]
-		}
-	    );
+	if(path)
 	    imagelist.scan(path[0],false);
-	}
 	
 	return imagelist.dump();
     }
@@ -200,16 +192,8 @@ Ipc.handle(
     'open-img',
     async (event,path)=>{
 	let item=imagelist.get_image(path);
-	if(item){
-	    event.sender.send(
-		'ack-open',
-		{
-		    type:'file',
-		    target:path
-		}
-	    );
+	if(item)
 	    item=await item.read_all();
-	}
 	
 	return item;
     }
@@ -225,16 +209,8 @@ Ipc.handle(
     'read-anno',
     async (event,path)=>{
 	let item=imagelist.get_image(path);
-	if(item){
-	    event.sender.send(
-		'ack-open',
-		{
-		    type:'file',
-		    target:path
-		}
-	    );
+	if(item)
 	    item=await item.read_annotation();
-	}
 	
 	return item;
     }
@@ -246,16 +222,9 @@ Ipc.handle(
 	let item=imagelist.get_image(path);
 	let retval=null;
 
-	if(item && anno){
-	    event.sender.send(
-		'ack-open',
-		{
-		    type:'file',
-		    target:path
-		}
-	    );
+	if(item && anno)
 	    retval=await item.write_annotation(anno);
-	}
+	
 	if(!retval){
 	    win.webContents.send(
 		'show-error',
@@ -276,13 +245,6 @@ Ipc.handle(
 	let retval=null;
 	
 	if(item){
-	    event.sender.send(
-		'ack-open',
-		{
-		    type:'file',
-		    target:path
-		}
-	    );
 	    retval=item.remove_annotation();
 	    if(!retval){
 		win.webContents.send(

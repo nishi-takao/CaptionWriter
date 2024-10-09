@@ -8,15 +8,6 @@ contextBridge.exposeInMainWorld(
     'extra',
     {
 	api:{
-	    reg_on_start_loading_handler:(callback)=>{
-		ipcRenderer.on(
-		    'ack-open',
-		    (event,args)=>{
-			callback(args);
-		    }
-		);
-	    },
-	    
 	    reg_on_error_handler:(callback)=>{
 		ipcRenderer.on(
 		    'show-error',

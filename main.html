@@ -11,6 +11,7 @@
 </head>
 
 <body>
+<div id='main-base'>
 <p id='cwd' tabindex='-1'></p>
 
 <ul id='filelist' tabindex='0'>
@@ -25,7 +26,6 @@
       data-original-height='0'
       data-path=''
       data-idx='-1' />
-<span id='loading-image' class="fa-solid fa-spinner"></span>
 </p>
 
 <div id='caption-area'>
@@ -58,6 +58,7 @@
 <button id='btn-edit-dispose' class="fa-regular fa-trash-can"
  title="Dispose the existing caption" tabindex='-1'></button>
 </p>
+</div>
 
 <dialog id='popup-dialog' >
 <h1></h1>
@@ -65,7 +66,8 @@
 <form method="dialog"></form>
 </dialog>
 
-<div id='lock' tabindex='-1'>
+<div id='lock-screen' class='none'>
+<p id='lock-loading'><span id='loading-image' class="fa-solid fa-spinner"></span></p>
 <p id='lock-message'></p>
 <p id='lock-bottom'></p>
 </div>
