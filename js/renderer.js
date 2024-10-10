@@ -464,9 +464,6 @@ Director.prototype._add_listeners=function()
     //
     // buttons
     //
-    this._elm.cwd.addEventListener(
-	'click',
-	this.cmd_dir_open.bind(this));
     this._elm.btn.list_open.addEventListener(
 	'click',
 	this.cmd_dir_open.bind(this));
@@ -493,7 +490,20 @@ Director.prototype._add_listeners=function()
 	'click',
 	this.cmd_edit_dispose.bind(this));
 
-    
+    //
+    // cwd area
+    //
+    this._elm.cwd.addEventListener(
+	'click',
+	this.cmd_dir_open.bind(this)
+    );
+    this._elm.filelist.addEventListener(
+	'focus',
+	(event)=>{
+	    this._set_edit_btn_inactive();
+	}
+   );// insurance in case the blur handler of the textarer is skipped
+
     //
     // filelist keys
     //
@@ -560,6 +570,12 @@ Director.prototype._add_listeners=function()
 `
    );
    this._elm.filelist.addEventListener(
+	'focus',
+       (event)=>{
+	   this._set_edit_btn_inactive();
+       } 
+   );// insurance in case the blur handler of the textarer is skipped
+   this._elm.filelist.addEventListener(
 	'blur',
        (event)=>{
 	   if((!event.relatedTarget)||
@@ -591,9 +607,19 @@ Director.prototype._add_listeners=function()
 	(event)=>{
 	    if(document.activeElement==event.target)
 		return;
-	    if(this._elm.main_base.disabled)
+	    if(this._is_loading()){
+		if(this._is_editing){
+		    //
+		    // Skip the confirmation dialog and just clean up
+		    //
+		    this._onEditEnd(
+			()=>this._set_edit_btn_inactive(),
+			Promise.resolve()
+		    );
+		}
 		return;
-	    
+	    }
+
 	    if(this._current_image){
 		if(!(
 		    this._edit_buttons.includes(
@@ -609,12 +635,11 @@ Director.prototype._add_listeners=function()
 			return;
 		    }
 		    
-		    this._set_edit_btn_inactive();
 		    this._onEditEnd(
-			this._elm.filelist.focus.bind(
-			    this._elm.filelist,
-			    null
-			)
+			()=>{
+			    this._set_edit_btn_inactive();
+			    this._elm.filelist.focus();
+			}
 		    );
 		}
 	    }
@@ -651,7 +676,9 @@ Director.prototype._add_listeners=function()
 	    case 's':
 		if(event.ctrlKey){
 		    event.preventDefault();
-		    this._do_commit();
+		    this._do_commit().then(
+			(r)=>event.target.focus()
+		    );
 		}
 		break;
 	    case 'Enter':
@@ -666,7 +693,9 @@ Director.prototype._add_listeners=function()
 		if(el.selectionStart!=el.selectionEnd)
 		    el.selectionEnd=el.selectionStart
 		else if(this._has_changed)
-		    this._do_discard().then((r)=>event.target.focus())
+		    this._do_discard().then(
+			(r)=>event.target.focus()
+		    )
 		else
 		    this._elm.filelist.focus();
 		break;
@@ -1253,6 +1282,13 @@ Director.prototype._set_edit_btn_active=function()
     if(this._last_commit_anno)
 	this._set_btn_active(this._elm.btn.edit_paste);
     
+    //
+    // The CSS :focus pseudo-class will not work because the textarea
+    // loses focus when it is disabled.
+    // Therefore, while editing, we will change the text area's class
+    // so that even when it is disabled, we can use the class selector
+    // to maintain its appearance.
+    //
     this._elm.caption.className='on';
 
 }    
