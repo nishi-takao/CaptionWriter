@@ -652,7 +652,7 @@ Director.prototype._add_listeners=function()
 		if(el.selectionStart!=el.selectionEnd)
 		    el.selectionEnd=el.selectionStart
 		else if(this._has_changed)
-		    this._do_discard();
+		    this._do_discard().then((r)=>event.target.focus())
 		else
 		    this._elm.filelist.focus();
 		break;
@@ -1238,9 +1238,14 @@ Director.prototype._set_edit_btn_active=function()
 {
     if(this._last_commit_anno)
 	this._set_btn_active(this._elm.btn.edit_paste);
+    
+    this._elm.caption.className='on';
+
 }    
 Director.prototype._set_edit_btn_inactive=function()
 {
+    this._elm.caption.className='off';
+
     // reject dispose button
     this._edit_buttons.filter(
 	(x)=>x!=this._elm.btn.edit_dispose
@@ -1531,25 +1536,6 @@ Director.prototype._show_error=function(args)
 
 Director.prototype._set_loading=function(args)
 {
-    //
-    // Prevent style changes to minimize flickering
-    //
-    const STYLE_BLACKLIST=['height','width','block-size','inline-size ']
-    const get_style_str=(el,p_el,blacklist=STYLE_BLACKLIST)=>{
-	let s=getComputedStyle(el,p_el);
-	let str=[];
-	for(let i=0;i<s.length;i++){
-	    let k=s[i];
-	    if(!blacklist.includes(k)){
-		str.push(`${k}:${s.getPropertyValue(k)}`);
-	    }
-	}
-	return str.join(";");
-    }
-    if(document.activeElement==this._elm.caption){
-	let el=this._elm.caption;
-	el.style=get_style_str(el,'focus');
-    }
     this._elm.main_base.disabled=true;
 
     //
@@ -1567,7 +1553,6 @@ Director.prototype._unset_loading=function()
     this._elm.scrlk.className='none';
     
     this._elm.main_base.removeAttribute('disabled');
-    this._elm.caption.removeAttribute('style');
 }
 Director.prototype._is_loading=function()
 {

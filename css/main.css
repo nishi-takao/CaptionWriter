@@ -220,6 +220,8 @@ html,body{
     background-color:inherit;
     color:white;
 }
+
+#caption.on,
 #caption:focus{
     background-color:white;
     color:black;
