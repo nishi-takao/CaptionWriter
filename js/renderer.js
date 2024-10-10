@@ -504,6 +504,18 @@ Director.prototype._add_listeners=function()
 		return;
 	    
 	    switch(event.key){
+	    case 'c':
+		if(event.ctrlKey){
+		    event.preventDefault();
+		    this.cmd_edit_copy_anno();
+		}
+		break;
+	    case 'C':
+		if(event.ctrlKey){
+		    event.preventDefault();
+		    this.cmd_edit_clear_copied_anno();
+		}
+		break;
 	    case 'ArrowUp':
 		event.preventDefault();
 		this.cmd_list_up();
@@ -519,10 +531,10 @@ Director.prototype._add_listeners=function()
 		break;
 	    case 'ArrowLeft':
 		event.preventDefault();
-		if(event.ctrlKey && event.shiftKey)
-		    this.cmd_edit_clear_copied_anno();
+		if(event.shiftKey)
+		    this.cmd_dir_rescan()
 		else
-		    this.cmd_edit_copy_anno();
+		    this.cmd_dir_open()
 		break;
 	    case 'Delete':
 		if(event.ctrlKey){
@@ -540,8 +552,10 @@ Director.prototype._add_listeners=function()
 	`[\u2191]: List Up
 [\u2193]: List Down
 [\u2192] or [RET] or [TAB]: Start Editing
-[\u2190]: Copy the Existing Caption
-[Ctrl-Shft-\u2190]: Clear the Copied Caption
+[\u2190]: Select Folder
+[Shift+\u2190]: Rescan
+[Ctrl-c]: Copy the Existing Caption
+[Ctrl-Shft-c]: Clear the Copied Caption
 [Ctrl-DEL]: Dispose the Existing Caption
 `
    );
