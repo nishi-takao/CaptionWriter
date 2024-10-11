@@ -58,8 +58,61 @@ html,body{
     overflow:hidden;
     height:100%;
 }
+#file-man{
+    position:absolute;
+    left:0;
+    margin:0;
+    padding:0;
+    border:none;
+    outline:none;
+    width:350px;
+    height:100%;
+    background-color:#606070;
+}
+#writer{
+    position:absolute;
+    margin:0;
+    padding:0;
+    border:none;
+    outline:none;
+    width:100%;
+    height:100%;
+    left:0;
+    background-color:#3a3a4a;
+}
+#writer.none{
+    left:0px;
+    animation-name:slidin;
+    animation-duration:0.075s;
+    animation-iteration-count:1;
+    animation-timing-function:ease-in;
+}
+#writer.dodge{
+    left:350px;
+    box-shadow:-4px 0 4px rgba(0,0,0,0.35);
+    animation-name:slideout;
+    animation-duration:0.075s;
+    animation-iteration-count:1;
+    animation-timing-function:ease-out;
+}
+@keyframes slidein{
+  from{
+      left:350px;
+  }
+  to{
+      left:0px;
+  }
+}
+@keyframes slideout{
+  from{
+      left:0px;
+  }
+  to{
+      left:350px;
+  }
+}
 #main-base{
-    position:relative;
+    position:absolute;
     margin:0;
     padding:0;
     border:none;
@@ -75,6 +128,7 @@ html,body{
         "filelist caption"
         "footer-l footer-r";
 }
+
 #cwd{
     grid-area:header;
     box-sizing:border-box;
@@ -513,7 +567,6 @@ dialog button:focus{
     text-shadow:5px 5px 3px #202020;
   }
 }
-
 #lock-message{
     position:absolute;
     display:inline-block;

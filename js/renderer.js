@@ -206,15 +206,19 @@ Dialog.prototype._move_lr=function(el,pos)
 
 ////////////////////////////////////////////////////////////////////////
 //
-// UI Director
+// Writing UI Controller
 //
-function Director(config={})
+function Writer(parent,config={})
 {
+    this._parrnt=parent;
+
     this._config={};
     this._set_config(config);
     
     this._lock_renderer='lock-renderer';
     this._lock_api='lock-api';
+
+    this._global_event_listner=null;
     
     this.cwd=null;
     this._list_size=0;
@@ -276,7 +280,32 @@ function Director(config={})
     this._elm.main_base.removeAttribute('disabled');
 }
 
-Director.prototype.cmd_dir_open=function(force)
+Writer.prototype.attach=function()
+{
+    this._global_event_listners.forEach((obj)=>{
+	window.addEventListener(
+	    obj.event,
+	    obj.func,
+	    obj.opt
+	)
+    },this);
+
+    return this;
+}
+Writer.prototype.detach=function()
+{
+    this._global_event_listners.forEach((obj)=>{
+	window.removeEventListener(
+	    obj.event,
+	    obj.func,
+	    obj.opt
+	)
+    },this);
+
+    return this;
+}
+
+Writer.prototype.cmd_dir_open=function(force)
 {
     if(this._is_loading())
 	return;
@@ -287,7 +316,7 @@ Director.prototype.cmd_dir_open=function(force)
     this._do_dir_open(false);
 }
 
-Director.prototype.cmd_dir_rescan=function()
+Writer.prototype.cmd_dir_rescan=function()
 {
     if(this._is_loading())
 	return;
@@ -298,7 +327,7 @@ Director.prototype.cmd_dir_rescan=function()
     this._do_dir_open(true);
 }
 
-Director.prototype.cmd_list_up=function()
+Writer.prototype.cmd_list_up=function()
 {
     if(this._is_loading())
 	return;
@@ -315,7 +344,7 @@ Director.prototype.cmd_list_up=function()
     );
 }
 
-Director.prototype.cmd_list_down=function()
+Writer.prototype.cmd_list_down=function()
 {
     if(this._is_loading())
 	return;
@@ -332,7 +361,7 @@ Director.prototype.cmd_list_down=function()
     );
 }
 
-Director.prototype.cmd_edit_start=function()
+Writer.prototype.cmd_edit_start=function()
 {
     if(this._is_loading())
 	return;
@@ -346,7 +375,7 @@ Director.prototype.cmd_edit_start=function()
     el.setSelectionRange(len,len);
 }
 
-Director.prototype.cmd_edit_copy_anno=function()
+Writer.prototype.cmd_edit_copy_anno=function()
 {
     if(this._is_loading())
 	return;
@@ -367,7 +396,7 @@ Director.prototype.cmd_edit_copy_anno=function()
     });
 }
 
-Director.prototype.cmd_edit_clear_copied_anno=function()
+Writer.prototype.cmd_edit_clear_copied_anno=function()
 {
     if(this._is_loading())
 	return;
@@ -380,7 +409,7 @@ Director.prototype.cmd_edit_clear_copied_anno=function()
 }
 
 
-Director.prototype.cmd_edit_commit=function()
+Writer.prototype.cmd_edit_commit=function()
 {
     if(this._is_loading())
 	return;
@@ -390,7 +419,7 @@ Director.prototype.cmd_edit_commit=function()
     });
 }
 
-Director.prototype.cmd_edit_paste_tlc=function()
+Writer.prototype.cmd_edit_paste_tlc=function()
 {
     if(this._is_loading())
 	return;
@@ -401,7 +430,7 @@ Director.prototype.cmd_edit_paste_tlc=function()
     this._do_paste_();
 }
 
-Director.prototype.cmd_edit_undo=function()
+Writer.prototype.cmd_edit_undo=function()
 {
     if(this._is_loading())
 	return;
@@ -411,7 +440,7 @@ Director.prototype.cmd_edit_undo=function()
     });
 }
 
-Director.prototype.cmd_edit_redo=function()
+Writer.prototype.cmd_edit_redo=function()
 {
     if(this._is_loading())
 	return;
@@ -421,7 +450,7 @@ Director.prototype.cmd_edit_redo=function()
     });
 }
 
-Director.prototype.cmd_edit_discard=function()
+Writer.prototype.cmd_edit_discard=function()
 {
     if(this._is_loading())
 	return;
@@ -429,7 +458,7 @@ Director.prototype.cmd_edit_discard=function()
     this._do_discard();
 }
 
-Director.prototype.cmd_edit_dispose=function()
+Writer.prototype.cmd_edit_dispose=function()
 {
     if(this._is_loading())
 	return;
@@ -441,7 +470,7 @@ Director.prototype.cmd_edit_dispose=function()
     });
 }
 
-Director.prototype._lock_with_loading=function(promise,lock)
+Writer.prototype._lock_with_loading=function(promise,lock)
 {
     if(lock)
 	return promise(lock);
@@ -459,7 +488,7 @@ Director.prototype._lock_with_loading=function(promise,lock)
     }
 }
 
-Director.prototype._add_listeners=function()
+Writer.prototype._add_listeners=function()
 {
     //
     // buttons
@@ -489,6 +518,42 @@ Director.prototype._add_listeners=function()
     this._elm.btn.edit_dispose.addEventListener(
 	'click',
 	this.cmd_edit_dispose.bind(this));
+    //
+    // add short cut key description to tool tip
+    //
+    this._add_text_to_title(
+	this._elm.btn.list_open,
+	'Ctrl-o'
+    );
+    this._add_text_to_title(
+	this._elm.btn.list_rescan,
+	'F5 or Ctrl-r'
+    );
+    this._add_text_to_title(
+	this._elm.btn.edit_commit,
+	'Ctrl-RET'
+    );
+    this._add_text_to_title(
+	this._elm.btn.edit_paste,
+	'Ctrl-Shift-v'
+    );
+    this._add_text_to_title(
+	this._elm.btn.edit_undo,
+	'Ctrl-z'
+    );
+    this._add_text_to_title(
+	this._elm.btn.edit_redo,
+	'Ctrl-y'
+    );
+    this._add_text_to_title(
+	this._elm.btn.edit_discard,
+	'Ctrl-Shift-d'
+    );
+    this._add_text_to_title(
+	this._elm.btn.edit_dispose,
+	'Ctrl-DEL'
+    );
+    
 
     //
     // cwd area
@@ -566,9 +631,9 @@ Director.prototype._add_listeners=function()
 [Shift+\u2190]: Rescan
 [Ctrl-c]: Copy the Existing Caption
 [Ctrl-Shft-c]: Clear the Copied Caption
-[Ctrl-DEL]: Dispose the Existing Caption
-`
+[Ctrl-DEL]: Dispose the Existing Caption`
    );
+    
    this._elm.filelist.addEventListener(
 	'focus',
        (event)=>{
@@ -715,160 +780,129 @@ Director.prototype._add_listeners=function()
 `
     );
     
-    
-    //
-    // global short-cut keys
-    //
-    window.addEventListener(
-	'keydown',
-	(event)=>{
-	    if(this._is_loading())
-		return;
+    this._buid_global_event_listners();
+}
 
-	    switch(event.key){
-	    case 'Delete':
-		if(event.ctrlKey){
-		    event.preventDefault();
-		    event.stopPropagation();
-		    this.cmd_edit_dispose();
-		}
-		break;
-	    case 'Enter':
-		if(event.ctrlKey){
-		    event.preventDefault();
-		    event.stopPropagation();
-		    this.cmd_edit_commit();
-		}
-		break;
-	    case 'V':
-		if(event.ctrlKey){
-		    event.preventDefault();
-		    event.stopPropagation();
-		    this.cmd_edit_paste_tlc();
-		}
-		break;
-	    case 'D':
-		if(event.ctrlKey){
-		    event.preventDefault();
-		    event.stopPropagation();
-		    this.cmd_edit_discard();
-		}
-		break;
-	    case 'o':
-		if(event.ctrlKey){
-		    event.preventDefault();
-		    event.stopPropagation();
-		    this.cmd_dir_open();
-		}
-		break;
-	    case 'r':
-		if(event.ctrlKey){
-		    event.preventDefault();
-		    event.stopPropagation();
-		    this.cmd_dir_rescan();
-		}
-		break;
-	    case 'F5':
-		event.preventDefault();
-		event.stopPropagation();
-		this.cmd_dir_rescan();
-		break;
-	    case 'L':
-		if(event.ctrlKey){
-		    event.preventDefault();
-		    event.stopPropagation();
-		    this._toggle_screenlock();
-		}
-		break;
-	    default:
-		//console.log([event,event.key.charCodeAt()]);
-	    }
-	}
-    );
-
-    //
-    // add short cut key description to tool tip
-    //
-    this._add_text_to_title(
-	this._elm.btn.list_open,
-	'Ctrl-o'
-    );
-    this._add_text_to_title(
-	this._elm.btn.list_rescan,
-	'F5 or Ctrl-r'
-    );
-    this._add_text_to_title(
-	this._elm.btn.edit_commit,
-	'Ctrl-RET'
-    );
-    this._add_text_to_title(
-	this._elm.btn.edit_paste,
-	'Ctrl-Shift-v'
-    );
-    this._add_text_to_title(
-	this._elm.btn.edit_undo,
-	'Ctrl-z'
-    );
-    this._add_text_to_title(
-	this._elm.btn.edit_redo,
-	'Ctrl-y'
-    );
-    this._add_text_to_title(
-	this._elm.btn.edit_discard,
-	'Ctrl-Shift-d'
-    );
-    this._add_text_to_title(
-	this._elm.btn.edit_dispose,
-	'Ctrl-DEL'
-    );
-    
+Writer.prototype._buid_global_event_listners=function()
+{
     // declaring as oneshot event for avoiding re-entrance
-    const func=(event)=>{
+    const resize_func=(event)=>{
 	    this._resize_();
 	    window.addEventListener(
 		'resize',
-		func,
+		resize_func,
 		{once:true}
 	    );
     };
-    window.addEventListener(
-	'resize',
-	func,
-	{once:true}
-    );
 
-    window.addEventListener(
-	'beforeunload',
-	(event)=>{
-	    if(!(this._current_image && this._has_changed))
-		return;
-	    
-	    event.preventDefault();
-	    this._edit_end().then((x)=>{
-		if(x=='continue'){
+    this._global_event_listners=[
+	{
+	    event:'keydown',
+	    func:(event)=>{
+		if(this._is_loading())
+		    return;
+		
+		switch(event.key){
+		case 'Delete':
+		    if(event.ctrlKey){
+			event.preventDefault();
+			event.stopPropagation();
+			this.cmd_edit_dispose();
+		    }
+		    break;
+		case 'Enter':
+		    if(event.ctrlKey){
+			event.preventDefault();
+			event.stopPropagation();
+			this.cmd_edit_commit();
+		    }
+		    break;
+		case 'V':
+		    if(event.ctrlKey){
+			event.preventDefault();
+			event.stopPropagation();
+			this.cmd_edit_paste_tlc();
+		    }
+		    break;
+		case 'D':
+		    if(event.ctrlKey){
+			event.preventDefault();
+			event.stopPropagation();
+			this.cmd_edit_discard();
+		    }
+		    break;
+		case 'o':
+		    if(event.ctrlKey){
+			event.preventDefault();
+			event.stopPropagation();
+			this.cmd_dir_open();
+		    }
+		    break;
+		case 'r':
+		    if(event.ctrlKey){
+			event.preventDefault();
+			event.stopPropagation();
+			this.cmd_dir_rescan();
+		    }
+		    break;
+		case 'F5':
 		    event.preventDefault();
-		    event.returnValue=false;
-		    this._elm.caption.focus();
-		    return event;
+		    event.stopPropagation();
+		    this.cmd_dir_rescan();
+		    break;
+		case 'L':
+		    if(event.ctrlKey){
+			event.preventDefault();
+			event.stopPropagation();
+			this._toggle_screenlock();
+		    }
+		    break;
+		default:
+		    //console.log([event,event.key.charCodeAt()]);
 		}
-		else{
-		    this._elm.filelist.focus();
-		    //
-		    // I want to know more smart way....
-		    //
-		    const callback=
-			this._win_close_action ? window.close : API.reload;
-		    setTimeout(
-			callback,
-			EVENT_OVERWRITE_INTERVAL
-		    );
-		}
-	    })
-	}
-    );
+	    },
+	    opt:null
+	},
+	{
+	    event:'resize',
+	    func:resize_func,
+	    opt:{once:true}
+	},
+	{
+	    event:'beforeunload',
+	    func:(event)=>{
+		if(!(this._current_image && this._has_changed))
+		    return;
+		
+		event.preventDefault();
+		this._edit_end().then((x)=>{
+		    if(x=='continue'){
+			event.preventDefault();
+			event.returnValue=false;
+			this._elm.caption.focus();
+			return event;
+		    }
+		    else{
+			this._elm.filelist.focus();
+			//
+			// I want to know more smart way....
+			//
+			const callback=
+			      this._win_close_action ? window.close : API.reload;
+			setTimeout(
+			    callback,
+			    EVENT_OVERWRITE_INTERVAL
+			);
+		    }
+		})
+	    },
+	    opt:null
+	},
+    ];
 }
 
-Director.prototype._apply_config=function(cfg=this._config)
+
+Writer.prototype._apply_config=function(cfg=this._config)
 {
     if(cfg.spellcheck)	
 	this._elm.caption.removeAttribute('spellcheck');
@@ -882,13 +916,13 @@ Director.prototype._apply_config=function(cfg=this._config)
 
 }
 
-Director.prototype._add_text_to_title=function(el,text)
+Writer.prototype._add_text_to_title=function(el,text)
 {
     let title=(el.getAttribute('title')||'')+' ['+text+']';
     el.setAttribute('title',title.trim());
 }
 
-Director.prototype._resize_=async function()
+Writer.prototype._resize_=async function()
 {
     let cw,ch;
     await navigator.locks.request(
@@ -902,7 +936,7 @@ Director.prototype._resize_=async function()
     return true;
 }
 
-Director.prototype._fit_image=function()
+Writer.prototype._fit_image=function()
 {
     if(!this._el_size.image_area_pad_w)
 	this._el_size.image_area_pad_w=parseInt(
@@ -954,7 +988,7 @@ Director.prototype._fit_image=function()
     return [cw,ch];
 }
 
-Director.prototype._rendering=function(imagelist,keep_image)
+Writer.prototype._rendering=function(imagelist,keep_image)
 {
     if(!imagelist){
 	this._set_list_btn_active();
@@ -988,7 +1022,7 @@ Director.prototype._rendering=function(imagelist,keep_image)
     this._elm.filelist.focus();
 }
 
-Director.prototype._set_list_btn_active=function()
+Writer.prototype._set_list_btn_active=function()
 {
     this._set_btn_active(this._elm.cwd);
     this._set_btn_active(this._elm.btn.list_open);
@@ -996,7 +1030,7 @@ Director.prototype._set_list_btn_active=function()
 }
 
 
-Director.prototype._erase_body=function(keep_list,keep_img)
+Writer.prototype._erase_body=function(keep_list,keep_img)
 {
     if(!keep_img)
 	this._close_current_image();
@@ -1019,7 +1053,7 @@ Director.prototype._erase_body=function(keep_list,keep_img)
     this._list_cursor_pos=null;
 }
 
-Director.prototype._set_cwd=function(cwd)
+Writer.prototype._set_cwd=function(cwd)
 {
     this.cwd=cwd;
     let str=cwd;
@@ -1031,7 +1065,7 @@ Director.prototype._set_cwd=function(cwd)
     this._elm.cwd.setAttribute('title',escapeHTML(cwd));
 }
 
-Director.prototype._build_filelist=function(imagelist)
+Writer.prototype._build_filelist=function(imagelist)
 {
     let old_path=null;
     if(this._current_image)
@@ -1085,7 +1119,7 @@ Director.prototype._build_filelist=function(imagelist)
     return last_anno_idx;
 }
 
-Director.prototype._edit_start=function()
+Writer.prototype._edit_start=function()
 {
     if(!this._current_image)
 	return;
@@ -1101,7 +1135,7 @@ Director.prototype._edit_start=function()
 	);
     }
 }
-Director.prototype._edit_end=function()
+Writer.prototype._edit_end=function()
 {
     if(!(this._current_image && this._has_changed))
 	return Promise.resolve(null);
@@ -1138,7 +1172,7 @@ How do you process them?`,
 //
 // _edit_end wrapper
 //
-Director.prototype._onEditEnd=function(callback,promise=this._edit_end())
+Writer.prototype._onEditEnd=function(callback,promise=this._edit_end())
 {
     return promise.then((x)=>{
 	let p=Promise.resolve(x);
@@ -1161,7 +1195,7 @@ Director.prototype._onEditEnd=function(callback,promise=this._edit_end())
     });
 }
 
-Director.prototype._idx2path=function(idx)
+Writer.prototype._idx2path=function(idx)
 {
     let el=this._elm.filelist.getElementsByTagName('li')[idx];
     if(el)
@@ -1170,7 +1204,7 @@ Director.prototype._idx2path=function(idx)
 	return el;
 }
 
-Director.prototype._show_image=function(idx,obj)
+Writer.prototype._show_image=function(idx,obj)
 {
     this._close_current_image();
     
@@ -1195,7 +1229,7 @@ Director.prototype._show_image=function(idx,obj)
 	this._set_btn_inactive(this._elm.btn.edit_dispose);
 }
 
-Director.prototype._set_anno=function(anno,event)
+Writer.prototype._set_anno=function(anno,event)
 {
     let el=this._elm.caption;
     if(anno)
@@ -1206,7 +1240,7 @@ Director.prototype._set_anno=function(anno,event)
     this._unset_anno_changed();
 }
 
-Director.prototype._close_current_image=function()
+Writer.prototype._close_current_image=function()
 {
     
     if(!this._current_image)
@@ -1220,11 +1254,11 @@ Director.prototype._close_current_image=function()
     this._current_image=null;
 }
 
-Director.prototype._get_list_item=function(idx)
+Writer.prototype._get_list_item=function(idx)
 {
     return this._elm.filelist.getElementsByTagName('li')[parseInt(idx)];
 }
-Director.prototype._set_list_select=function(idx)
+Writer.prototype._set_list_select=function(idx)
 {
     let el=this._get_list_item(idx);
     if(!el)
@@ -1239,7 +1273,7 @@ Director.prototype._set_list_select=function(idx)
     el.scrollIntoViewIfNeeded(false); // depends on WebKit
     return el;
 }
-Director.prototype._unset_list_select=function(idx)
+Writer.prototype._unset_list_select=function(idx)
 {
     let el=this._get_list_item(idx);
     if(!el)
@@ -1251,7 +1285,7 @@ Director.prototype._unset_list_select=function(idx)
     cls=cls.replaceAll('selected','').trim();
     el.setAttribute('class',cls);
 }
-Director.prototype._set_anno_changed=function()
+Writer.prototype._set_anno_changed=function()
 {
     this._has_changed=true;
     this._set_btn_active(this._elm.btn.edit_commit);
@@ -1259,7 +1293,7 @@ Director.prototype._set_anno_changed=function()
     this._set_btn_active(this._elm.btn.edit_redo);
     this._set_btn_active(this._elm.btn.edit_discard);
 }
-Director.prototype._unset_anno_changed=function()
+Writer.prototype._unset_anno_changed=function()
 {
     let c=this._has_changed;
     this._has_changed=false;
@@ -1277,7 +1311,7 @@ Director.prototype._unset_anno_changed=function()
     
     return c;
 }
-Director.prototype._set_edit_btn_active=function()
+Writer.prototype._set_edit_btn_active=function()
 {
     if(this._last_commit_anno)
 	this._set_btn_active(this._elm.btn.edit_paste);
@@ -1292,7 +1326,7 @@ Director.prototype._set_edit_btn_active=function()
     this._elm.caption.className='on';
 
 }    
-Director.prototype._set_edit_btn_inactive=function()
+Writer.prototype._set_edit_btn_inactive=function()
 {
     this._elm.caption.className='off';
 
@@ -1305,19 +1339,19 @@ Director.prototype._set_edit_btn_inactive=function()
     });
 } 
 
-Director.prototype._set_btn_active=function(obj)
+Writer.prototype._set_btn_active=function(obj)
 {
     obj.removeAttribute('disabled');
 }
-Director.prototype._set_btn_inactive=function(obj)
+Writer.prototype._set_btn_inactive=function(obj)
 {
     obj.setAttribute('disabled','');
 }
-Director.prototype._is_btn_active=function(obj)
+Writer.prototype._is_btn_active=function(obj)
 {
     return obj.getAttribute('disabled')==null;
 }
-Director.prototype._set_all_inactive=function()
+Writer.prototype._set_all_inactive=function()
 {
     this._set_btn_inactive(this._elm.cwd);
     Object.values(this._elm.btn).forEach((el)=>{
@@ -1325,7 +1359,7 @@ Director.prototype._set_all_inactive=function()
     });
 }
 
-Director.prototype._do_dir_open=function(is_rescan)
+Writer.prototype._do_dir_open=function(is_rescan)
 {
     let promise=Promise.resolve(null);
     let editing=false
@@ -1335,6 +1369,11 @@ Director.prototype._do_dir_open=function(is_rescan)
     }
 
     const dir=is_rescan ? this.cwd : null;
+    // for testing, FIXME
+    if(!is_rescan)
+	document.getElementById('writer').className='dodge';
+    //
+    
     const callback=()=>{
 	this._set_all_inactive();
 	this._lock_with_loading(
@@ -1342,6 +1381,10 @@ Director.prototype._do_dir_open=function(is_rescan)
 		this._rendering(result,is_rescan);
 		return Promise.resolve('dir-open');
 	    }).then(()=>{
+		// for testing, FIXME
+		if(!is_rescan)
+		    document.getElementById('writer').className='none';
+		//
 		if(editing)
 		    this._elm.caption.focus();
 		return Promise.resolve('dir-open');
@@ -1360,7 +1403,7 @@ Director.prototype._do_dir_open=function(is_rescan)
     );
 }
 
-Director.prototype._do_image_open=function(idx,focus_element)
+Writer.prototype._do_image_open=function(idx,focus_element)
 {
     return this._lock_with_loading(
 	(lock)=>this._do_image_open.bare.call(this,idx).then(
@@ -1375,7 +1418,7 @@ Director.prototype._do_image_open=function(idx,focus_element)
 	)
     );
 }
-Director.prototype._do_image_open.bare=function(idx)
+Writer.prototype._do_image_open.bare=function(idx)
 {
     let path=this._idx2path(idx);
     if(!path)
@@ -1394,13 +1437,13 @@ Director.prototype._do_image_open.bare=function(idx)
     );
 }
 
-Director.prototype._do_commit=function()
+Writer.prototype._do_commit=function()
 {
     return this._lock_with_loading(
 	(lock)=>this._do_commit.bare.call(this)
     );
 }
-Director.prototype._do_commit.bare=function(path)
+Writer.prototype._do_commit.bare=function(path)
 {
     if(!path){
 	path=this._current_image?.dataset?.path;
@@ -1430,13 +1473,13 @@ Director.prototype._do_commit.bare=function(path)
 }
 
 
-Director.prototype._do_discard=function()
+Writer.prototype._do_discard=function()
 {
     return this._lock_with_loading(
 	(lock)=>this._do_discard.bare.call(this)
     );
 }
-Director.prototype._do_discard.bare=function(path)
+Writer.prototype._do_discard.bare=function(path)
 {
     if(!path){
 	path=this._current_image?.dataset?.path;
@@ -1458,13 +1501,13 @@ Director.prototype._do_discard.bare=function(path)
 }
 
 
-Director.prototype._do_dispose=function()
+Writer.prototype._do_dispose=function()
 {
     return this._lock_with_loading(
 	(lock)=>this._do_dispose.bare.call(this)
     );
 }
-Director.prototype._do_dispose.bare=function(path)
+Writer.prototype._do_dispose.bare=function(path)
 {
     if(!path){
 	path=this._current_image?.dataset.path;
@@ -1505,7 +1548,7 @@ Director.prototype._do_dispose.bare=function(path)
     });
 }
 
-Director.prototype._set_anno_mark=function(disposed)
+Writer.prototype._set_anno_mark=function(disposed)
 {
     let el=this._get_list_item(this._list_cursor_pos);
     if(!el)
@@ -1523,7 +1566,7 @@ Director.prototype._set_anno_mark=function(disposed)
     this._unset_anno_changed();
 }
 
-Director.prototype._do_paste_=async function()
+Writer.prototype._do_paste_=async function()
 {
     if(!this._is_editing)
 	return Promise.resolve(null);
@@ -1549,7 +1592,7 @@ Director.prototype._do_paste_=async function()
     );
 }
 
-Director.prototype._copy_anno=function(anno)
+Writer.prototype._copy_anno=function(anno)
 {
     this._last_commit_anno=anno;
     
@@ -1566,7 +1609,7 @@ Director.prototype._copy_anno=function(anno)
     );
 }
 
-Director.prototype._set_config=function(c)
+Writer.prototype._set_config=function(c)
 {
     if(this._config)
 	Object.assign(this._config,c);
@@ -1575,7 +1618,7 @@ Director.prototype._set_config=function(c)
 }
 
 
-Director.prototype._show_error=function(args)
+Writer.prototype._show_error=function(args)
 {
     this._dialog.show({
 	type:'error',
@@ -1584,7 +1627,7 @@ Director.prototype._show_error=function(args)
     })
 }
 
-Director.prototype._set_loading=function(args)
+Writer.prototype._set_loading=function(args)
 {
     this._elm.main_base.disabled=true;
 
@@ -1596,7 +1639,7 @@ Director.prototype._set_loading=function(args)
 	INTERVAL_UNTIL_LOADING_SCREEN
     );
 }
-Director.prototype._unset_loading=function()
+Writer.prototype._unset_loading=function()
 {
     clearTimeout(this._elm.scrlk.dataset.timerId);
     delete this._elm.scrlk.dataset.timerId;
@@ -1604,13 +1647,13 @@ Director.prototype._unset_loading=function()
     
     this._elm.main_base.removeAttribute('disabled');
 }
-Director.prototype._is_loading=function()
+Writer.prototype._is_loading=function()
 {
     return this._elm.main_base.disabled;
 }
 
 
-Director.prototype._set_screenlock=function()
+Writer.prototype._set_screenlock=function()
 {
     document.getElementById('lock-message').textContent=
 	this._config.lockscreen_messgae||'[Ctrl-Shift-l] to unlock';
@@ -1623,7 +1666,7 @@ Director.prototype._set_screenlock=function()
     this._elm.scrlk.className='locking';
     this._elm.scrlk.focus();
 }
-Director.prototype._unset_screenlock=function()
+Writer.prototype._unset_screenlock=function()
 {
     this._elm.scrlk.className='none';
     this._elm.scrlk.removeAttribute('tabindex');
@@ -1637,7 +1680,7 @@ Director.prototype._unset_screenlock=function()
     else
 	this._elm.filelist.focus();
 }
-Director.prototype._toggle_screenlock=function()
+Writer.prototype._toggle_screenlock=function()
 {
     if(this._elm.scrlk.className=='locking')
 	this._unset_screenlock();
@@ -1645,14 +1688,15 @@ Director.prototype._toggle_screenlock=function()
 	this._set_screenlock();
 }
 //
-// end of Director
+// end of Writer
 //
 ////////////////////////////////////////////////////////////////////////
 
 window.onload=function(event){
     API.get_config().then(
-	(c)=>document.director=new Director(c)
+	(c)=>document.director=new Writer(null,c)
     ).then((r)=>{
+	document.director.attach();
 	API.reg_on_error_handler(
 	    document.director._show_error.bind(document.director)
 	);
