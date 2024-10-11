@@ -7,11 +7,13 @@
 	content="default-src 'self'; img-src 'self' data:" />
   <title>Caption Writer</title>
   <link href="./css/main.css" rel="stylesheet" />
-  <script src='./js/renderer.js'></script>
+  <script src='./js/util.js'></script>
+  <script src='./js/writer.js'></script>
+  <script src='./js/director.js'></script>
 </head>
 
 <body>
-<div id='file-man'>
+<div id='filer'>
 </div>
 
 <div id='writer'>
@@ -64,18 +66,19 @@
 </p>
 </fieldset>
 
-<dialog id='popup-dialog' >
-<h1></h1>
-<p></p>
-<form method="dialog"></form>
-</dialog>
+</div><!-- end of writer -->
 
 <div id='lock-screen' class='none'>
 <p id='lock-loading'><span id='loading-image' class="fa-solid fa-spinner"></span></p>
 <p id='lock-message'></p>
 <p id='lock-bottom'></p>
 </div>
-</div><!-- end of writer -->
+
+<dialog id='popup-dialog' >
+<h1></h1>
+<p></p>
+<form method="dialog"></form>
+</dialog>
 
 </body>
 

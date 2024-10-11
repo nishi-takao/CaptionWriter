@@ -58,7 +58,7 @@ html,body{
     overflow:hidden;
     height:100%;
 }
-#file-man{
+#filer{
     position:absolute;
     left:0;
     margin:0;
@@ -94,21 +94,38 @@ html,body{
     animation-duration:0.075s;
     animation-iteration-count:1;
     animation-timing-function:ease-out;
+    opacity:0.8;
 }
 @keyframes slidein{
-  from{
+  0%{
       left:350px;
+      opacity:1.0;
   }
-  to{
+  99.9%{
       left:0px;
+      opacity:1.0;
+  }
+  100%{
+      left:0px;
+      opacity:1.0;
+      box-shadow:none;;
   }
 }
 @keyframes slideout{
-  from{
+  0%{
       left:0px;
+      opacity:1.0;
+      box-shadow:-4px 0 4px rgba(0,0,0,0.35);
   }
-  to{
+  99.9%{
       left:350px;
+      opacity:1.0;
+      box-shadow:-4px 0 4px rgba(0,0,0,0.35);
+  }
+  100%{
+      left:350px;
+      opacity:0.8;
+      box-shadow:-4px 0 4px rgba(0,0,0,0.35);
   }
 }
 #main-base{
@@ -517,6 +534,11 @@ dialog button:focus{
     left:182px;
     top: 52px;
 }
+#lock-loading.center{
+    width:100%;
+    left:0px;
+}
+
 #lock-loading span{
     position:absolute;
     display:inline-block;
