@@ -8,18 +8,18 @@
     "author": "NISHI, Takao <nithi.t.es@osaka-u.ac.jp>",
     "license": "BSD-2-Clause",
     "repository": {
-	"type": "git",
-	"url": "https://github.com/nishi-takao/CaptionWriter.git"
+        "type": "git",
+        "url": "https://github.com/nishi-takao/CaptionWriter.git"
     },
     "scripts": {
-	"test": "echo \"Error: no test specified\" && exit 1",
-	"postinstall": "node postinstall.js"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "postinstall": "node postinstall.js"
     },
     "dependencies": {
-	"@fortawesome/fontawesome-free": "^6.6.0",
-	"electron": "^32.0.2",
-	"file-type": "^16.5.4",
-	"image-size": "^1.1.1",
-	"roboto-fontface": "^0.10.0"
+        "@fortawesome/fontawesome-free": "^6.6.0",
+        "electron": "^32.2.0",
+        "file-type": "^16.5.4",
+        "image-size": "^1.1.1",
+        "roboto-fontface": "^0.10.0"
     }
 }
