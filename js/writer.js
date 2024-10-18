@@ -3,7 +3,6 @@
 //
 const MAX_DIRNAME_LEN=64;
 const EVENT_OVERWRITE_INTERVAL=3;
-const INTERVAL_UNTIL_LOADING_SCREEN=10;
 
 ////////////////////////////////////////////////////////////////////////
 //
@@ -11,13 +10,12 @@ const INTERVAL_UNTIL_LOADING_SCREEN=10;
 //
 function Writer(parent,config={})
 {
-    this._parrnt=parent;
+    this._parent=parent;
 
     this._config={};
     this._set_config(config);
     
     this._lock_renderer='lock-renderer';
-    this._lock_api='lock-api';
 
     this._global_event_listner=null;
     
@@ -68,7 +66,8 @@ function Writer(parent,config={})
 	this._elm.btn.edit_dispose
     ];
 
-    this._dialog=new Dialog(this._elm.dialog);
+    //this._dialog=new Dialog(this._elm.dialog);
+    this._dialog=this._parent.dialog;
 
     // size caches
     this._el_size={};
@@ -181,7 +180,7 @@ Writer.prototype.cmd_edit_copy_anno=function()
     if(this._is_loading())
 	return;
 
-    this._lock_with_loading((lock)=>{
+    this._parent.lock_with_loading((lock)=>{
 	if((!this._list_size)||(this._list_cursor_pos==null))
 	    return Promise.resolve();
     
@@ -270,25 +269,6 @@ Writer.prototype.cmd_edit_dispose=function()
 	this._elm.filelist.focus();
     });
 }
-
-Writer.prototype._lock_with_loading=function(promise,lock)
-{
-    if(lock)
-	return promise(lock);
-    else{
-	let timer;
-	return navigator.locks.request(
-	    this._lock_api,
-	    (lock)=>{
-		this._set_loading();
-		return promise(lock);
-	    }
-	).finally((r)=>{
-	    this._unset_loading();
-	});
-    }
-}
-
 Writer.prototype._add_listeners=function()
 {
     //
@@ -440,14 +420,22 @@ Writer.prototype._add_listeners=function()
        (event)=>{
 	   this._set_edit_btn_inactive();
        } 
-   );// insurance in case the blur handler of the textarer is skipped
+   );// insurance in case the blur handler of the textarea is skipped
    this._elm.filelist.addEventListener(
 	'blur',
        (event)=>{
 	   if((!event.relatedTarget)||
 	      (event.relatedTarget==this._elm.caption &&
-	       !this._current_image))
+	       !this._current_image)){
 	       this._elm.filelist.focus();
+	   }
+	   /*
+	   else if(event.relatedTarget==this._elm.scrlk){
+	       this._parent.screen_guard.set_related_target(
+		   this._elm.filelist
+	       );
+	   }
+	   */
        }
    );
 
@@ -496,8 +484,11 @@ Writer.prototype._add_listeners=function()
 			this._dialog._status=='opend')
 		)){
 		    if(event.relatedTarget==this._elm.scrlk){
-			this._elm.scrlk.dataset.relatedTarget=
-			    this._elm.caption.id;
+			/*
+			this._parent.screen_guard.set_related_target(
+			    this._elm.caption
+			);
+			*/
 			return;
 		    }
 		    
@@ -582,6 +573,13 @@ Writer.prototype._add_listeners=function()
     );
     
     this._buid_global_event_listners();
+
+    this._parent.screen_guard.add_loading_hook(
+	this,
+	()=>{this._elm.main_base.disabled=true},
+	()=>{this._elm.main_base.disabled=false}
+    );
+
 }
 
 Writer.prototype._buid_global_event_listners=function()
@@ -655,7 +653,8 @@ Writer.prototype._buid_global_event_listners=function()
 		    if(event.ctrlKey){
 			event.preventDefault();
 			event.stopPropagation();
-			this._toggle_screenlock();
+			//this._toggle_screenlock();
+			    this._parent.screen_guard.toggle_screenlock();
 		    }
 		    break;
 		default:
@@ -1177,7 +1176,7 @@ Writer.prototype._do_dir_open=function(is_rescan)
     
     const callback=()=>{
 	this._set_all_inactive();
-	this._lock_with_loading(
+	this._parent.lock_with_loading(
 	    (lock)=>API.open_dir(dir).then((result)=>{
 		this._rendering(result,is_rescan);
 		return Promise.resolve('dir-open');
@@ -1206,7 +1205,7 @@ Writer.prototype._do_dir_open=function(is_rescan)
 
 Writer.prototype._do_image_open=function(idx,focus_element)
 {
-    return this._lock_with_loading(
+    return this._parent.lock_with_loading(
 	(lock)=>this._do_image_open.bare.call(this,idx).then(
 	    (r)=>{
 		if(focus_element?.focus)
@@ -1240,7 +1239,7 @@ Writer.prototype._do_image_open.bare=function(idx)
 
 Writer.prototype._do_commit=function()
 {
-    return this._lock_with_loading(
+    return this._parent.lock_with_loading(
 	(lock)=>this._do_commit.bare.call(this)
     );
 }
@@ -1276,7 +1275,7 @@ Writer.prototype._do_commit.bare=function(path)
 
 Writer.prototype._do_discard=function()
 {
-    return this._lock_with_loading(
+    return this._parent.lock_with_loading(
 	(lock)=>this._do_discard.bare.call(this)
     );
 }
@@ -1304,7 +1303,7 @@ Writer.prototype._do_discard.bare=function(path)
 
 Writer.prototype._do_dispose=function()
 {
-    return this._lock_with_loading(
+    return this._parent.lock_with_loading(
 	(lock)=>this._do_dispose.bare.call(this)
     );
 }
@@ -1418,76 +1417,11 @@ Writer.prototype._set_config=function(c)
 	this._config=c;
 }
 
-
-Writer.prototype._show_error=function(args)
-{
-    this._dialog.show({
-	type:'error',
-	title:args.title,
-	message:args.message
-    })
-}
-
-Writer.prototype._set_loading=function(args)
-{
-    this._elm.main_base.disabled=true;
-
-    //
-    // Loading screen is shown with a slight delay
-    //
-    this._elm.scrlk.dataset.timerId=setTimeout(
-	()=>this._elm.scrlk.className='loading',
-	INTERVAL_UNTIL_LOADING_SCREEN
-    );
-}
-Writer.prototype._unset_loading=function()
-{
-    clearTimeout(this._elm.scrlk.dataset.timerId);
-    delete this._elm.scrlk.dataset.timerId;
-    this._elm.scrlk.className='none';
-    
-    this._elm.main_base.removeAttribute('disabled');
-}
 Writer.prototype._is_loading=function()
 {
     return this._elm.main_base.disabled;
 }
 
-
-Writer.prototype._set_screenlock=function()
-{
-    document.getElementById('lock-message').textContent=
-	this._config.lockscreen_messgae||'[Ctrl-Shift-l] to unlock';
-
-    document.getElementById('lock-bottom').textContent=
-	`${this._config.appInfo.name} ${this._config.appInfo.version}
-\u00a9 ${this._config.appInfo.year} by ${this._config.appInfo.author}`;
-
-    this._elm.scrlk.setAttribute('tabindex','-1');
-    this._elm.scrlk.className='locking';
-    this._elm.scrlk.focus();
-}
-Writer.prototype._unset_screenlock=function()
-{
-    this._elm.scrlk.className='none';
-    this._elm.scrlk.removeAttribute('tabindex');
-    let r=this._elm.scrlk.dataset.relatedTarget;
-    if(r){
-	let el=document.getElementById(r);
-	delete this._elm.scrlk.dataset.relatedTarget;
-	if(el)
-	    el.focus();
-    }
-    else
-	this._elm.filelist.focus();
-}
-Writer.prototype._toggle_screenlock=function()
-{
-    if(this._elm.scrlk.className=='locking')
-	this._unset_screenlock();
-    else
-	this._set_screenlock();
-}
 //
 // end of Writer
 //

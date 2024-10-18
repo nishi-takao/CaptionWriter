@@ -11,7 +11,9 @@ const Dialog=Electron.dialog
 const Clipboard=Electron.clipboard;
 const Path=require('node:path');
 const FS=require('fs');
-const ImageList=require('./js/imagelist');
+const ImageList=require(Path.join(__dirname,'js','imagelist'));
+const Util=require(Path.join(__dirname,'js','util'));
+
 
 const WINDOW_MIN_WIDTH=800;
 const WINDOW_MIN_HEIGHT=720;
@@ -33,6 +35,7 @@ let config={
 	height:768
     },
     UI:{
+	hide_titlebar:false,
 	auto_commit:true,
 	dispose_without_confirm:false,
 	spellcheck:true,
@@ -42,21 +45,9 @@ let config={
     cwd:'.'
 }
 
-const deep_merge=(src,dst)=>{
-    Object.entries(dst).forEach(([k,v])=>{
-	if(typeof(v)=='object'){
-	    if(!src[k])
-		src[k]={};
-	    deep_merge(src[k],v);
-	}
-	else
-	    src[k]=v;
-    })
-};
-				
 try{
     let c=JSON.parse(FS.readFileSync(CONFIG_FILE,'utf8'));
-    deep_merge(config,c);
+    Util.objectDeepMerge(config,c);
 }
 catch(e){
 }
@@ -64,7 +55,7 @@ catch(e){
 if(!config.ignore_last_status){
     try{
 	let s=JSON.parse(FS.readFileSync(LAST_STAT_FILE,'utf8'));
-	deep_merge(config,s);
+	Util.objectDeepMerge(config,s);
     }
     catch(e){}
 }
@@ -91,6 +82,15 @@ if(config.cwd){
     }
 }
 
+let titlebar_style='default';
+let titlebar_overlay=false;
+if(config.UI.hide_titlebar){
+    titlebar_style='hidden';
+    titlebar_overlay={
+	color:'#5a5a6a'
+    };
+}
+
 App.on("ready", () => {
     win=new BrowserWindow({
 	x:config.window.x,
@@ -99,6 +99,8 @@ App.on("ready", () => {
 	height:config.window.height,
 	backgroundColor:'#2e2c29',
 	useContentSize:false,
+	titleBarStyle:titlebar_style,
+	titleBarOverlay:titlebar_overlay,
 	webPreferences:{
 	    sandbox:false,
 	    preload:Path.join(__dirname,'js','preload.js'),
