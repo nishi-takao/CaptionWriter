@@ -29,8 +29,8 @@ contextBridge.exposeInMainWorld(
 	    get_config:()=>{
 		return ipcRenderer.invoke('get-config');
 	    },
-	    open_dir:(path)=>{
-		return ipcRenderer.invoke('open-dir',path);
+	    open_dir:(path,preview)=>{
+		return ipcRenderer.invoke('open-dir',path,preview);
 	    },
 	    open_img:(path)=>{
 		return ipcRenderer.invoke('open-img',path);

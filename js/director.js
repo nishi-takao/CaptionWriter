@@ -469,10 +469,11 @@ Director=function(config={})
     });
     
     
-    this._filer=null;
+    this._filer=new Filer(this,this._config);
     this._writer=new Writer(this,this._config);
-
     this._writer.attach();
+
+    this._writer_last_wd=null;
 }
 
 Director.prototype.lock_with_loading=function(promise,lock)
@@ -500,6 +501,48 @@ Director.prototype.show_error=function(args)
     })
 }
 
+Director.prototype.open_tree=function(dir)
+{
+    this._writer_last_wd=this._writer.cwd;
+
+    this._writer.detach();
+    this._filer.attach();
+    this.open_dir(dir,true);
+}
+
+Director.prototype.close_tree=function(dir)
+{
+    if(!dir)
+	dir=this._writer_last_wd||this._filer._cwd;
+
+    this.open_dir(dir,false).then((p)=>{
+	this._filer.detach();
+	this._writer.attach();
+    });
+}
+
+Director.prototype.open_dir=function(dir,is_preview=false)
+{
+    return this.lock_with_loading(
+	(lock)=>API.open_dir(dir,is_preview)
+    ).then((result)=>{
+	this._filer.build(result);
+	if(is_preview)
+	    this._writer._preview(result);
+	else
+	    this._writer._rendering(result,false,true);
+	
+	return Promise.resolve('dir-open');
+    }).catch((e)=>{
+	console.log(e);
+	this.show_error({
+	    title:e.name,
+	    message:e.message
+	});
+	return Promise.reject('dir-open');
+    });
+}
+
 
 
 Director.prototype._set_config=function(c)
@@ -523,6 +566,7 @@ window.onload=function(event){
 		document.director._writer._win_close_action=true;
 	    }
 	);
-	document.director._writer.cmd_dir_open();
+	//document.director._writer.cmd_dir_open();
+	document.director.open_tree();
     });
 }

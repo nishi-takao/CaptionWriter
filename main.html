@@ -8,14 +8,56 @@
   <title>Caption Writer</title>
   <link href="./css/main.css" rel="stylesheet" />
   <script src='./js/util.js'></script>
+  <script src='./js/filer.js'></script>
   <script src='./js/writer.js'></script>
   <script src='./js/director.js'></script>
 </head>
 
 <body>
+
+<!-- directory tree area -->
 <div id='filer'>
+<ul id='tree'>
+<li class='drive-list'>
+<ul id='drives-root'>
+<li class='open'>C:</li>
+<li>D:</li>
+<li>H:</li>
+</ul></li>
+<li class='open unfixed'>
+<ul>
+<li>bin</li>
+<li>boot</li>
+<li>etc</li>
+<li class='open unfixed'>home
+<ul>
+<li class='open unfixed'>zophos
+<ul>
+<li class='open cwd'>work</li>
+</ul></li></ul></li>
+<li>lib</li>
+<li>opt</li>
+<li>sbin</li>
+<li>tmp</li>
+<li>usr
+<ul>
+<li>bin</li>
+<li>etc</li>
+<li>sbin</li>
+</ul></li>
+<li>var</li>
+</ul>
+</li>
+</ul>
+<p id='filer-buttons'>
+<button id='filer-open'
+ class="fa-solid fa-arrow-right-from-bracket" title="Select"></button>
+<button id='filer-cancel'
+ class="fa-solid fa-xmark" title='Cancel'></button>
+</p>
 </div>
 
+<!-- image captioning area -->
 <div id='writer'>
 <fieldset id='main-base'>
 <p id='cwd' tabindex='-1'></p>

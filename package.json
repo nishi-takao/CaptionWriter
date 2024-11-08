@@ -1,7 +1,7 @@
 {
     "name": "caption_writer",
     "productName": "Caption Writer",
-    "version": "0.9.0",
+    "version": "0.9.5",
     "main": "main.js",
     "description": "Caption Writer is a tool to easily create captioned image datasets for training VL models.",
     "keywords": [],
@@ -20,6 +20,7 @@
         "electron": "^32.2.0",
         "file-type": "^16.5.4",
         "image-size": "^1.1.1",
-        "roboto-fontface": "^0.10.0"
+        "roboto-fontface": "^0.10.0",
+        "windows-drive-letters": "^4.0.0"
     }
 }

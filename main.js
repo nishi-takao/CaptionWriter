@@ -128,7 +128,7 @@ App.on("ready", () => {
 			if(config.save_last_status){
 			    let j=JSON.stringify({
 				window:win.getBounds(),
-				cwd:imagelist.cwd
+				cwd:imagelist.cwd||imagelist._wd
 			    },null,2);
 			    try{
 				FS.writeFileSync(LAST_STAT_FILE,j);
@@ -168,11 +168,13 @@ Ipc.handle(
 let cwd=imagelist.cwd||config.cwd;
 Ipc.handle(
     'open-dir',
-    async (event,arg)=>{
+    async (event,path,preview)=>{
+	/*
 	let path=null;
 	if(arg)
 	    path=[arg];
 	else{
+	    /*
 	    let default_path=imagelist.cwd||'.';
 	    path=Dialog.showOpenDialogSync(
 		win,
@@ -182,12 +184,21 @@ Ipc.handle(
 		    properties:['openDirectory','showHiddenFiles']
 		}
 	    );
+	    path=[imagelist.cwd||'.'];
 	}
 	
 	if(path)
 	    imagelist.scan(path[0],false);
+	*/
 	
-	return imagelist.dump();
+	path||=(imagelist.cwd||'.');
+	if(preview){
+	    return imagelist.get_dir(path).dump();
+	}
+	else{
+	    imagelist.scan(path);
+	    return imagelist.dump();
+	}
     }
 );
 Ipc.handle(

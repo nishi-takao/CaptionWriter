@@ -1,6 +1,6 @@
 // imagelist.js -- a part of Caption Writer
 //
-// NISHI, Takao <nishi.t.es@osaka-u.ac.jp 
+// NISHI, Takao <nishi.t.es@osaka-u.ac.jp>
 //
 "use strict";
 
@@ -17,17 +17,12 @@ const AnnoFileExt='.caption';
 //
 //
 //
-function ImageItem(fn,is_dir)
+function ImageItem(fn)
 {
     this.path=fn;
     
-    if(is_dir)
-	this.is_dir=true;
-    else{
-	this.is_dir=false;
-	this.test_annotation();
-	this.img_sz=null;
-    }
+    this.test_annotation();
+    this.img_sz=null;
 };
 
 ImageItem.prototype.img2ann=function(fn)
@@ -65,9 +60,6 @@ ImageItem.prototype.read_all=async function()
 
 ImageItem.prototype.image_size=function()
 {
-    if(this.is_dir)
-	return null;
-    
     if(!this.img_sz)
 	this.img_sz=ImageSize(this.path);
 
@@ -76,9 +68,6 @@ ImageItem.prototype.image_size=function()
 
 ImageItem.prototype.read_image=async function()
 {
-    if(this.is_dir)
-	return null;
-    
     let content=FS.readFileSync(this.path);
     let ft=await FileType.fromBuffer(content);
     ft=(ft && ft.mime) ? ft.mime : 'application/octet-stream';
@@ -88,9 +77,6 @@ ImageItem.prototype.read_image=async function()
 
 ImageItem.prototype.test_annotation=function()
 {
-    if(this.is_dir)
-	return false;
-    
     this.annotation_path=this.img2ann(this.path);
     this.has_annotation=FS.existsSync(this.annotation_path);
     
@@ -99,9 +85,6 @@ ImageItem.prototype.test_annotation=function()
 
 ImageItem.prototype.read_annotation=async function()
 {
-    if(this.is_dir)
-	return false;
-    
     var anno=null;
     if(!this.annotation_path)
 	this.test_annotation();
@@ -114,9 +97,6 @@ ImageItem.prototype.read_annotation=async function()
 
 ImageItem.prototype.write_annotation=function(anno)
 {
-    if(this.is_dir)
-	return false;
-
     try{
 	if(this.has_annotation)
 	    FS.renameSync(this.annotation_path,this.annotation_path+'.bak');
@@ -132,8 +112,7 @@ ImageItem.prototype.write_annotation=function(anno)
 };
 ImageItem.prototype.remove_annotation=function()
 {
-    if(this.is_dir||
-       (!this.has_annotation))
+    if(!this.has_annotation)
 	return false;
     
     try{
@@ -152,18 +131,15 @@ ImageItem.prototype.remove_annotation=function()
 ImageItem.prototype.dump=function(opt)
 {
     var obj={
-	is_dir:this.is_dir,
-	path:this.path,
+	path:this._URIarm ? encodeURI(this.path) : this.path,
+	path_raw:this.path,
 	basename:this.basename(),
+	annotation_path:this.annotation_path,
+	has_annotation:this.has_annotation
     };
 
-    if(!this.is_dir){
-	obj.annotation_path=this.annotation_path;
-	obj.has_annotation=this.has_annotation;
-
-	if(opt && opt.with_size)
-	    obj.image_size=this.image_size();
-    }
+    if(opt?.with_size)
+	obj.image_size=this.image_size();
 
     
     return obj;
@@ -182,6 +158,7 @@ ImageItem.prototype.dump=function(opt)
 function URIarmedImageItem(fn,is_dir)
 {
     ImageItem.prototype.constructor.call(this,fn,is_dir);
+    this._URIarm=true;
 }
 URIarmedImageItem.prototype=Object.create(
     ImageItem.prototype,
@@ -194,26 +171,176 @@ URIarmedImageItem.prototype=Object.create(
 	}
     }
 );
-URIarmedImageItem.prototype.dump=function(opt)
-{
-    var obj={
-	is_dir:this.is_dir,
-	path:encodeURI(this.path),
-	basename:encodeURI(this.basename()),
-    };
-    
-    if(!this.is_dir){
-	obj.annotation_path=encodeURI(this.annotation_path);
-	obj.has_annotation=this.has_annotation;
+//
+// end of URIarmedImageItem
+//
+////////////////////////////////////////////////////////////////////////
 
-	if(opt && opt.with_size)
-	    obj.image_size=this.image_size();
+
+////////////////////////////////////////////////////////////////////////
+//
+// Node Object for Directory Tree
+//
+function DirItem(path,recurse=true)
+{
+    this.path=null;
+    this.basename=null;
+    this.is_drive=false;
+    this.dirs=new Map();
+    this.parent=null;
+    this._URIarm=false;
+    
+    if(path)
+	this.build(path,recurse);
+}
+DirItem.DriveNode=null;
+
+DirItem.prototype.build=function(path,recurse=true)
+{
+    this.path=Path.resolve(path);
+    this.basename=Path.basename(this.path);
+    if(process.platform=='win32' && path.endsWith(':'))
+	this.is_drive=true;
+	
+    if(!recurse)
+	return this;
+    
+    let _p=Path.resolve(Path.join(path,'..'));
+    if(_p==path){
+	if(this.is_drive){
+	    if(!DirItem.DriveNode)
+		DirItem.DriveNode=new DriveNode(this._URIarm);
+	    this.parent=DirItem.DriveNode;
+	    let d=this.parent.dirs.get(this.path);
+	    if(d){
+		d.parent=null;
+		this.parent.dirs.delete(this.path);
+	    }
+	    this.parent.add_child(this)
+	}
+	else
+	    this.parent=null;
     }
+    else{
+	let D=Object.getPrototypeOf(this).constructor;
+	this.parent=new D(_p,true);
+	this.parent.add_child(this);
+    }
+
+    return this;
+}
+DirItem.prototype.add_child=function(path_or_node)
+{
+    let path,node;
+    if(path_or_node.path){
+	path=path_or_node.path;
+	node=path_or_node;
+    }
+    else{
+	path=path_or_node;
+	node=new (Object.getPrototypeOf(this).constructor)(path,false);
+    }
+    node.parent=this;
+    this.dirs.set(path,node);
+    return this;
+}
+DirItem.prototype.root_node=function()
+{
+    if(this.parent)
+	return this.parent.root()
+    else
+	return this;
+}
+DirItem.prototype.dump=function(dir=1)
+{
+    let obj={
+	path: this._URIarm ? encodeURI(this.path) : this.path,
+	path_raw: this.path,
+	basename: this.basename,
+	is_drive: this.is_drive,
+    }
+
+    if(dir>0){
+	let d=this.dirs.keys().toArray();
+	d.sort();
+	obj.dirs=d.map((k)=>this.dirs.get(k).dump(dir));
+    }
+    else if(dir<0)
+	obj.parent=this.parent ? this.parent.dump(dir) : null;
     
     return obj;
 }
 //
-// end of URIarmedImageItem
+// end of DirItem
+//
+////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////
+//
+// DirItem with URI encode
+//
+function URIarmedDirItem(path,recurse=true)
+{
+    DirItem.prototype.constructor.call(this,path,recurse);
+    this._URIarm=true;
+}
+URIarmedDirItem.prototype=Object.create(
+    DirItem.prototype,
+    {
+	constructor:{
+	    value:URIarmedDirItem,
+	    enumerable: false,
+	    writable: true,
+	    configurable: true
+	}
+    }
+);
+//
+// end of URIarmedDirItem
+//
+////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////
+//
+// Drive node for Windows
+//
+function DriveNode(with_URIarm)
+{
+    DirItem.prototype.constructor.call(this,null);
+    
+    this.path='\\\\';
+    this._URIarm=with_URIarm;
+    const D=with_URIarm ? URIarmedDirNode: DirNode;
+    
+    let drives=require('windows-drive-letters').usedSync();
+
+    drives.forEach((d)=>{
+	this.add_child(new D(d+':',false));
+    });
+}
+DriveNode.prototype=Object.create(
+    DirItem.prototype,
+    {
+	constructor:{
+	    value:DriveNode,
+	    enumerable: false,
+	    writable: true,
+	    configurable: true
+	}
+    }
+);
+DriveNode.prototype.dump=function(dir)
+{
+    let d=this.dirs.keys().toArray();
+    d.sort();
+    return {
+	path: this.path,
+	path_raw: this.path,
+	drives: d.map((k)=>this._dirs.get(k).dump(dir)),
+    };
+}
+//
+// end of DriveNode
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -223,75 +350,71 @@ URIarmedImageItem.prototype.dump=function(opt)
 //
 function ImageList({dir=null,with_URIarm=false})
 {
-    this.cwd=".";
-    this.dirs=new Map();
+    this.cwd=null;
     this.images=new Map();
+    this.tree=null;
     this._URIarm=with_URIarm;
     
+    this._wd=null;
+    this._preview=null;
+
     if(dir)
 	this.scan(dir);
 };
 
-ImageList.prototype.scan=function(dir,with_dir=true)
+ImageList.prototype.scan=function(dir,explicit=true)
 {
-    var self=this;
-    this.cwd=Path.resolve(dir);
-    this.dirs.clear();
+    this._wd=Path.resolve(dir);
     this.images.clear();
+    this._preview=null;
     
-    var files=null;
+    let files=null;
     try{
-	files=FS.readdirSync(this.cwd);
+	files=FS.readdirSync(this._wd);
     }
     catch(e){
-	this.cwd=null;
+	this._wd=null;
 	throw e;
     }
     
+    const D=this._URIarm ? URIarmedDirItem : DirItem;
     const I=this._URIarm ? URIarmedImageItem : ImageItem;
-    files.forEach(function(fn){
-	var fullpath=Path.resolve(Path.join(dir,fn));
-	var stat;
+
+    this.tree=new D(this._wd);
+    this.tree._expanded=true;
+    
+    files.forEach((fn)=>{
+	let fullpath=Path.resolve(Path.join(dir,fn));
+	let stat;
 	try{
 	    stat=FS.statSync(fullpath);
 	}
 	catch(err){}
 	
 	if(stat){
-	    if(stat.isDirectory() && with_dir){
-		self.dirs.set(
-		    fullpath,
-		    new I(fullpath,true)
-		);
-	    }
+	    if(stat.isDirectory())
+		this.tree.add_child(new D(fullpath,false));
 	    else if(stat.isFile()){
-		var ext=Path.extname(fn);
+		let ext=Path.extname(fn);
 		if(ext.match(ImageFileExtRegexp)){
-		    self.images.set(
+		    this.images.set(
 			fullpath,
 			new I(fullpath,false)
 		    );
 		}
 	    }
 	}
-    });
-
+    },this);
+    
+    if(explicit || !this.cwd)
+	this.cwd=this._wd;
+    
     return this;
 };
 
-ImageList.prototype.is_root_dir=function()
-{
-    return this.cwd===Path.resolve(this.cwd,'..');
-}
-
-ImageList.prototype.parent_dir=function()
-{
-    return Path.resolve(this.cwd,'..');
-}
-
 ImageList.prototype.path_join=function(fn)
 {
-    return Path.resolve(this.cwd,fn);
+    return Path.resolve(this._wd,fn);
 }
 ImageList.prototype.get_image=function(path)
 {
@@ -304,15 +427,29 @@ ImageList.prototype.get_image_by_index=function(idx)
 {
     return this.images.values().toArray()[idx];
 }
+ImageList.prototype.get_dir=function(path)
+{
+    if(this._URIarm)
+	path=decodeURI(path);
+
+    return this.scan(path,false)
+}
 
 ImageList.prototype.dump=function()
 {
-    return {
-	cwd:this.cwd,
-	parent_dir: this.is_root_dir()?null:this.parent_dir(),
-	dirs:this.dirs.values().toArray().map((d)=>d.dump()),
-	images:this.images.values().toArray().map((d)=>d.dump())
-    };
-    
+    let obj=this.tree?.dump(-1) || {};
+    obj.cwd=this._wd;
+    obj.images=this.images.values().toArray().map((d)=>d.dump());
+
+    let d=this.tree.dirs.keys().toArray();
+    d.sort();
+    obj.dirs=d.map((k)=>this.tree.dirs.get(k).dump(0));
+
+    return obj;
 }
+//
+// end of ImageList
+//
+////////////////////////////////////////////////////////////////////////
+
 module.exports=ImageList;
