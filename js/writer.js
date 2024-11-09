@@ -406,6 +406,11 @@ Writer.prototype._add_listeners=function()
 		else
 		    this.cmd_dir_open()
 		break;
+	    case 'Escape':
+		event.preventDefault();
+		event.stopPropagation();
+		this.cmd_dir_open()
+		break;
 	    case 'Delete':
 		if(event.ctrlKey){
 		    event.preventDefault();

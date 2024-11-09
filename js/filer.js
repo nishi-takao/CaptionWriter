@@ -391,6 +391,15 @@ Filer.prototype.detach=function()
     return this;
 }
 
+Filer.prototype.cmd_up=function(target)
+{
+    let items=this._get_displayed_items();
+    let idx=items.indexOf(target._element);
+    if(idx>0){
+	let obj=TreeNode.node_dic[items[idx-1].dataset.path];
+	this.cmd_set_cwd(obj,target);
+    }
+}
 Filer.prototype.cmd_goto_parent=function(target)
 {
     if(target.is_drive)
@@ -402,12 +411,19 @@ Filer.prototype.cmd_goto_parent=function(target)
 
     this.cmd_set_cwd(p,target);
 }
-Filer.prototype.cmd_up=function(target)
+Filer.prototype.cmd_goto_prev_sibling=function(target)
+{
+    let obj=TreeNode.node_dic[target._element.previousSibling?.dataset?.path];
+    if(obj)
+	this.cmd_set_cwd(obj,target);
+}
+
+Filer.prototype.cmd_down=function(target)
 {
     let items=this._get_displayed_items();
     let idx=items.indexOf(target._element);
-    if(idx>0){
-	let obj=TreeNode.node_dic[items[idx-1].dataset.path];
+    if(idx>=0 && idx<items.length-1){
+	let obj=TreeNode.node_dic[items[idx+1].dataset.path];
 	this.cmd_set_cwd(obj,target);
     }
 }
@@ -428,15 +444,13 @@ Filer.prototype.cmd_goto_child=function(target)
     this.cmd_set_cwd(obj[0],target);
     
 }
-Filer.prototype.cmd_down=function(target)
+Filer.prototype.cmd_goto_next_sibling=function(target)
 {
-    let items=this._get_displayed_items();
-    let idx=items.indexOf(target._element);
-    if(idx>=0 && idx<items.length-1){
-	let obj=TreeNode.node_dic[items[idx+1].dataset.path];
+    let obj=TreeNode.node_dic[target._element.nextSibling?.dataset?.path];
+    if(obj)
 	this.cmd_set_cwd(obj,target);
-    }
 }
+
 Filer.prototype.cmd_move_to=function(target,key){
     let el=target._is_expanding ?
 	target._child_elm : target._parent?._child_elm;
@@ -503,6 +517,9 @@ Filer.prototype.cmd_set_cwd=function(
     current_cwd_obj=null,
     force_scan=false)
 {
+    if(!target)
+	return;
+    
     if(!current_cwd_obj)
 	current_cwd_obj=TreeNode.node_dic[this._cwd];
     current_cwd_obj?.unset_cwd();
@@ -555,6 +572,8 @@ Filer.prototype._add_event_listeners=function()
     this._elm.tree_root.addEventListener(
 	'click',
 	(event)=>{
+	    if(this._is_loading())
+		return;
 	    event.preventDefault();
 	    event.stopPropagation();
 	    if(!this._click_timer[event.target])
@@ -568,6 +587,8 @@ Filer.prototype._add_event_listeners=function()
     this._elm.tree_root.addEventListener(
 	'dblclick',
 	(event)=>{
+	    if(this._is_loading())
+		return;
 	    event.preventDefault();
 	    event.stopPropagation();
 	    clearTimeout(this._click_timer[event.target]);
@@ -589,8 +610,14 @@ Filer.prototype._buid_global_event_listners=function()
 	{
 	    event:'keydown',
 	    func:(event)=>{
-		//if(this._is_loading())
-		//    return;
+		if(this._is_loading()){
+		    if(event.key=='L' && event.ctrlKey){
+			event.preventDefault();
+			event.stopPropagation();
+			this._parent.screen_guard.unset_screenlock();
+		    }
+		    return;
+		}
 		let obj=TreeNode.node_dic[this._cwd];
 		if(!obj)
 		    return;
@@ -601,6 +628,8 @@ Filer.prototype._buid_global_event_listners=function()
 		    event.stopPropagation();
 		    if(event.ctrlKey)
 			this.cmd_goto_parent(obj);
+		    else if(event.shiftKey)
+			this.cmd_goto_prev_sibling(obj);
 		    else
 			this.cmd_up(obj);
 		    break;
@@ -609,6 +638,8 @@ Filer.prototype._buid_global_event_listners=function()
 		    event.stopPropagation();
 		    if(event.ctrlKey)
 			this.cmd_goto_child(obj);
+		    else if(event.shiftKey)
+			this.cmd_goto_next_sibling(obj);
 		    else
 			this.cmd_down(obj);
 		    break;
@@ -647,6 +678,12 @@ Filer.prototype._buid_global_event_listners=function()
 			    event.stopPropagation();
 			    this.cmd_move_to(obj,event.key)
 			}
+			else if(event.key=='L'){
+			    event.preventDefault();
+			    event.stopPropagation();
+			    this._parent.screen_guard.toggle_screenlock();
+			}
+
 		    }
 		    //console.log([event,event.key.charCodeAt()]);
 		}
@@ -655,7 +692,10 @@ Filer.prototype._buid_global_event_listners=function()
 	},
     ];
 }
-
+Filer.prototype._is_loading=function()
+{
+    return this._parent.screen_guard.is_active;
+}
 Filer.prototype._get_displayed_items=function(c=null)
 {
     if(!c){
