@@ -354,6 +354,7 @@ function ImageList({dir=null,with_URIarm=false})
     this.images=new Map();
     this.tree=null;
     this._URIarm=with_URIarm;
+    this._error=null;
     
     this._wd=null;
     this._preview=null;
@@ -365,23 +366,28 @@ function ImageList({dir=null,with_URIarm=false})
 ImageList.prototype.scan=function(dir,explicit=true)
 {
     this._wd=Path.resolve(dir);
+    if(explicit || !this.cwd)
+	this.cwd=this._wd;
     this.images.clear();
     this._preview=null;
-    
-    let files=null;
-    try{
-	files=FS.readdirSync(this._wd);
-    }
-    catch(e){
-	this._wd=null;
-	throw e;
-    }
     
     const D=this._URIarm ? URIarmedDirItem : DirItem;
     const I=this._URIarm ? URIarmedImageItem : ImageItem;
 
     this.tree=new D(this._wd);
     this.tree._expanded=true;
+    
+    this._error=null;
+    let files=null;
+    try{
+	files=FS.readdirSync(this._wd);
+    }
+    catch(e){
+	console.log(e);
+	this._error=e;
+	this.tree._expanded=false;
+	return this;
+    }
     
     files.forEach((fn)=>{
 	let fullpath=Path.resolve(Path.join(dir,fn));
@@ -405,9 +411,6 @@ ImageList.prototype.scan=function(dir,explicit=true)
 	    }
 	}
     },this);
-    
-    if(explicit || !this.cwd)
-	this.cwd=this._wd;
     
     return this;
 };
@@ -444,7 +447,14 @@ ImageList.prototype.dump=function()
     let d=this.tree.dirs.keys().toArray();
     d.sort();
     obj.dirs=d.map((k)=>this.tree.dirs.get(k).dump(0));
-
+    if(this._error)
+	obj.error={
+	    name:this._error.name,
+	    message:this._error.message
+	}
+    else
+	obj.error=null;
+    
     return obj;
 }
 //

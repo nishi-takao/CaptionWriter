@@ -905,7 +905,7 @@ Writer.prototype._erase_body=function(keep_list,keep_img)
     //
     // clear header
     //
-    this.cwd=null;
+    //this.cwd=null;
     this._elm.cwd.innerText='';
     this._elm.cwd.removeAttribute('title');
     
@@ -1225,55 +1225,6 @@ Writer.prototype._set_all_inactive=function()
     });
 }
 
-/*
-Writer.prototype._do_dir_open=function(is_rescan)
-{
-    let promise=Promise.resolve(null);
-    let editing=false
-    if(this._has_changed){
-	promise=this._edit_end();
-	editing=true;
-    }
-
-    const dir=is_rescan ? this.cwd : null;
-    
-    const callback=()=>{
-	this._set_all_inactive();
-	// for testing, FIXME
-	if(!is_rescan){
-	    //document.getElementById('writer').className='dodge';
-	    this.detach();
-	}
-	//
-	this._parent.lock_with_loading(
-	    (lock)=>API.open_dir(dir).then((result)=>{
-		this._parent._filer.build(result);
-		//this._rendering(result,is_rescan);
-		this._preview(result);
-		return Promise.resolve('dir-open');
-	    }).then(()=>{
-		// for testing, FIXME
-		//if(!is_rescan)
-		//    document.getElementById('writer').className='none';
-		//
-		if(editing)
-		    this._elm.caption.focus();
-		return Promise.resolve('dir-open');
-	    }).catch((e)=>{
-		console.log(e);
-		if(is_rescan)
-		    return this._do_dir_open(false);
-		else
-		    return Promise.reject('dir-open');
-	    })
-	);
-    }
-    this._onEditEnd(
-	callback.bind(this),
-	promise
-    );
-}
-*/
 Writer.prototype._do_dir_open=function(is_rescan)
 {
     let promise=Promise.resolve(null);

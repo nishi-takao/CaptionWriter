@@ -84,11 +84,13 @@ html,body{
     list-style:none;
     margin:0;
     padding:0;
+    user-select:none;
 }
 #tree{
     grid-area:tree;
     overflow-x:auto;
     overflow-y:auto;
+    position:relative;
 }
 #filer>ul{
     padding:0.75em 0;
@@ -154,6 +156,37 @@ html,body{
     content:'\f0a0';
     font-weight:900;
 }
+#filer li.error{
+    color:#404050;
+    background-color:#606070;
+}
+#filer li.error:after{
+    display:inline-block;
+    position:absolute;
+    left:1.6em;
+    top:0.1em;
+    width:9pt;
+    height:9pt;
+    line-height:9pt;
+    text-align:center;
+    border-radius:50%;
+    border:none;
+    background-color:#606070;
+    font-size:8pt;
+    font-family:"Font Awesome 6 Free";
+    font-weight:900;
+    content:'\f06a';
+    color:#503030;
+}
+#filer li.cwd.error{
+    color:#a07070;
+    background-color:#404050;
+}
+#filer li.cwd.error:after{
+    color:#a07070;
+    background-color:#404050;
+}
+
 #filer-buttons{
     grid-area:buttons;
     box-sizing:border-box;

@@ -169,36 +169,22 @@ let cwd=imagelist.cwd||config.cwd;
 Ipc.handle(
     'open-dir',
     async (event,path,preview)=>{
-	/*
-	let path=null;
-	if(arg)
-	    path=[arg];
-	else{
-	    /*
-	    let default_path=imagelist.cwd||'.';
-	    path=Dialog.showOpenDialogSync(
-		win,
+	path||=(imagelist.cwd||'.');
+	if(preview)
+	    imagelist.get_dir(path)
+	else
+	    imagelist.scan(path);
+
+	if(imagelist._error)
+	    win.webContents.send(
+		'show-error',
 		{
-		    title:'Select Directory',
-		    defaultPath:default_path,
-		    properties:['openDirectory','showHiddenFiles']
+		    title:imagelist._error.name,
+		    message:imagelist._error.message,
 		}
 	    );
-	    path=[imagelist.cwd||'.'];
-	}
 	
-	if(path)
-	    imagelist.scan(path[0],false);
-	*/
-	
-	path||=(imagelist.cwd||'.');
-	if(preview){
-	    return imagelist.get_dir(path).dump();
-	}
-	else{
-	    imagelist.scan(path);
-	    return imagelist.dump();
-	}
+	return imagelist.dump();
     }
 );
 Ipc.handle(
