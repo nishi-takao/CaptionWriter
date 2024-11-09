@@ -450,7 +450,9 @@ ImageList.prototype.dump=function()
     if(this._error)
 	obj.error={
 	    name:this._error.name,
-	    message:this._error.message
+	    message:this._error.message,
+	    errno:this._error.errno,
+	    code:this._error.code,
 	}
     else
 	obj.error=null;

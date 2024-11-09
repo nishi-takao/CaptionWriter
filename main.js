@@ -14,6 +14,7 @@ const FS=require('fs');
 const ImageList=require(Path.join(__dirname,'js','imagelist'));
 const Util=require(Path.join(__dirname,'js','util'));
 
+//const NODE_Util = require('node:util'); 
 
 const WINDOW_MIN_WIDTH=800;
 const WINDOW_MIN_HEIGHT=720;
@@ -180,7 +181,8 @@ Ipc.handle(
 		'show-error',
 		{
 		    title:imagelist._error.name,
-		    message:imagelist._error.message,
+		    message:
+		    `(${imagelist._error.errno}) ${imagelist._error.message}`
 		}
 	    );
 	

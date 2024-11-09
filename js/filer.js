@@ -17,7 +17,7 @@ function TreeNode(obj=null)
     this.basename=null;
     this.is_drive=false;
     this.is_fixed=false;
-    this.has_errors=false;
+    this.has_error=false;
     
     this._dirs=new Map();
     this._parent=null;
@@ -77,7 +77,7 @@ TreeNode.prototype.parse=function(obj)
 	this.is_drive=obj.is_drive||false;
 	this.is_fixed=obj.is_fixed||false;
 	if(obj.error){
-	    this.has_errors=true;
+	    this.has_error=true;
 	    this.is_fixed=false;
 	}
 	this._build_className();
@@ -125,11 +125,11 @@ TreeNode.prototype._update=function(obj)
     }
     else if(obj.error){
 	this.is_fixed=false;
-	this.has_errors=true;
+	this.has_error=true;
     }
     else{
 	if(obj.error===null)
-	    this.has_errors=false;
+	    this.has_error=false;
 
 	let src=obj.drives || obj.dirs;
 	if(!src)
@@ -187,7 +187,7 @@ TreeNode.prototype.remove_me=function()
     });
     
     if(this._parent)
-	this._parent._remove_child(this._element);
+	this._parent._remove_child(this);
     
     this._parent=null;
     delete this._element;
@@ -195,7 +195,7 @@ TreeNode.prototype.remove_me=function()
 }
 TreeNode.prototype._remove_child=function(node)
 {
-    this._dirs.delete(node._path);
+    this._dirs.delete(node.path);
     this._child_elm.removeChild(node._element);
     if(this._dirs.size==0){
 	this._element.removeChild(this._child_elm);
@@ -211,15 +211,15 @@ TreeNode.prototype.root_node=function()
 }
 TreeNode.prototype.set_fixed=function(o)
 {
-    if(this.has_errors){
-	if(o?.error || o.error==undefined)
+    if(this.has_error){
+	if(o?.error || o.error===undefined)
 	    return this;
 	else
 	    this.has_error=false;
     }
     else if(o?.error){
 	this.is_fixed=false;
-	this.has_errors=true;
+	this.has_error=true;
 	this._build_className();
 	return this;
     }
@@ -286,7 +286,7 @@ TreeNode.prototype._build_className=function()
 	let cls=[];
 	if(this._is_cwd)
 	    cls.push('cwd');
-	if(this.has_errors)
+	if(this.has_error)
 	    cls.push('error');
 	else{
 	    /*
@@ -337,26 +337,41 @@ function Filer(parent,config={})
 
 Filer.prototype.build=function(obj)
 {
-    if(obj.path){
-	if(this._tree)
-	    this._tree.parse(obj)
-	else{
-	    let t=new TreeNode(obj);
-	    this._tree=t.root_node();
+    const CRIT_ERRS=/(ENOENT|ENOTDIR)/;
+    
+    if(!(obj.path && obj.cwd))
+	return;
 
-	    while(this._elm.tree_root.firstChild){
-		this._elm.tree_root.removeChild(
-		    this._elm.tree_root.firstChild
-		);
-	    }
-	    this._elm.tree_root.appendChild(this._tree._element);
+    if(this._tree)
+	this._tree.parse(obj);
+    else{
+	let t=new TreeNode(obj);
+	this._tree=t.root_node();
+	
+	while(this._elm.tree_root.firstChild){
+	    this._elm.tree_root.removeChild(
+		this._elm.tree_root.firstChild
+	    );
 	}
+	this._elm.tree_root.appendChild(this._tree._element);
     }
 
-    if(this._cwd)
-	TreeNode.node_dic[this._cwd]?.unset_cwd();
-
-    if(obj.cwd){
+    if(obj.error?.code?.match(CRIT_ERRS)){
+	let n=TreeNode.node_dic[TreeNode.raw2enc[obj.cwd]];
+	if(!n)
+	    return;
+	
+	if(this._cwd==n.path){
+	    let p=n._parent;
+	    this._cwd=p?.path;
+	    p?.set_cwd();
+	}
+	n.remove_me();
+    }
+    else{
+	if(this._cwd)
+	    TreeNode.node_dic[this._cwd]?.unset_cwd();
+	
 	this._cwd=TreeNode.raw2enc[obj.cwd];
 	let o=TreeNode.node_dic[this._cwd];
 	if(o){
@@ -495,7 +510,7 @@ Filer.prototype.cmd_shrink=function(target,goto_parent_when_shrinked=false)
 }
 Filer.prototype.cmd_open=function(target)
 {
-    if(target.has_errors)
+    if(target.has_error)
 	return;
     
     this._parent.close_tree(target.path);
@@ -524,7 +539,7 @@ Filer.prototype.cmd_set_cwd=function(
 	current_cwd_obj=TreeNode.node_dic[this._cwd];
     current_cwd_obj?.unset_cwd();
     
-    if(force_scan||!target.has_errors){
+    if(force_scan||!target.has_error){
 	this._parent.open_dir(target.path,true).then((p)=>{
 	    target.set_cwd();
 	    target._element.scrollIntoView({
