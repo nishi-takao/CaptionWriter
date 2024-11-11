@@ -343,7 +343,7 @@ Writer.prototype._add_listeners=function()
 	'Ctrl-DEL'
     );
     
-
+    
     //
     // cwd area
     //
@@ -356,7 +356,7 @@ Writer.prototype._add_listeners=function()
 	(event)=>{
 	    this._set_edit_btn_inactive();
 	}
-   );// insurance in case the blur handler of the textarer is skipped
+    );// insurance in case the blur handler of the textarer is skipped
 
     //
     // filelist keys
@@ -433,32 +433,25 @@ Writer.prototype._add_listeners=function()
 [Ctrl-c]: Copy the Existing Caption
 [Ctrl-Shft-c]: Clear the Copied Caption
 [Ctrl-DEL]: Dispose the Existing Caption`
-   );
+    );
     
-   this._elm.filelist.addEventListener(
+    this._elm.filelist.addEventListener(
 	'focus',
-       (event)=>{
-	   this._set_edit_btn_inactive();
-       } 
-   );// insurance in case the blur handler of the textarea is skipped
-   this._elm.filelist.addEventListener(
+	(event)=>{
+	    this._set_edit_btn_inactive();
+	} 
+    );// insurance in case the blur handler of the textarea is skipped
+    this._elm.filelist.addEventListener(
 	'blur',
-       (event)=>{
-	   if((!event.relatedTarget)||
-	      (event.relatedTarget==this._elm.caption &&
-	       !this._current_image)){
-	       this._elm.filelist.focus();
-	   }
-	   /*
-	   else if(event.relatedTarget==this._elm.scrlk){
-	       this._parent.screen_guard.set_related_target(
-		   this._elm.filelist
-	       );
-	   }
-	   */
-       }
-   );
-
+	(event)=>{
+	    if((!event.relatedTarget)||
+	       (event.relatedTarget==this._elm.caption &&
+		!this._current_image?.src)){
+		this._elm.filelist.focus();
+	    }
+	}
+    );
+    
     
     //
     // text-area
@@ -467,7 +460,7 @@ Writer.prototype._add_listeners=function()
     this._elm.caption.addEventListener(
 	'focus',
 	(event)=>{
-	    if(this._current_image){
+	    if(this._current_image?.src){
 		this._set_edit_btn_active();
 		this._edit_start();
 	    }
@@ -494,7 +487,7 @@ Writer.prototype._add_listeners=function()
 		return;
 	    }
 
-	    if(this._current_image){
+	    if(this._current_image?.src){
 		if(!(
 		    this._edit_buttons.includes(
 			event.relatedTarget
@@ -691,7 +684,7 @@ Writer.prototype._buid_global_event_listners=function()
 	{
 	    event:'beforeunload',
 	    func:(event)=>{
-		if(!(this._current_image && this._has_changed))
+		if(!(this._current_image?.src && this._has_changed))
 		    return;
 		
 		event.preventDefault();
@@ -777,7 +770,7 @@ Writer.prototype._fit_image=function()
     let cw=Pw-this._el_size.image_area_pad_w;
     let ch=Ph-this._el_size.image_area_pad_h;
     
-    if(!this._current_image)
+    if(!this._current_image?.src)
 	return [cw,ch];
     
     const Ow=parseInt(this._current_image.dataset.originalWidth);
@@ -953,7 +946,6 @@ Writer.prototype._build_filelist=function(imagelist)
 	    li.dataset.path=obj.path;
 	    li.dataset.idx=idx;
 	    li.setAttribute('tabindex',-1);
-	    li.setAttribute('title','');
 	    
 	    if(obj.has_annotation){
 		li.dataset.hasAnnotation='true';
@@ -966,10 +958,10 @@ Writer.prototype._build_filelist=function(imagelist)
 	    
 	    li.addEventListener(
 		'click',
-		()=>{
+		(event)=>{
 		    if(this._is_loading())
 			return;
-		    this._do_image_open(idx,false)
+		    this._do_image_open(event.target?.dataset?.idx,false)
 		}
 	    );
 	    
@@ -992,7 +984,7 @@ Writer.prototype._build_filelist=function(imagelist)
 
 Writer.prototype._edit_start=function()
 {
-    if(!this._current_image)
+    if(!this._current_image?.src)
 	return;
     
     this._is_editing=true;
@@ -1008,7 +1000,7 @@ Writer.prototype._edit_start=function()
 }
 Writer.prototype._edit_end=function()
 {
-    if(!(this._current_image && this._has_changed))
+    if(!(this._current_image?.src && this._has_changed))
 	return Promise.resolve(null);
     
     return (async ()=>{
@@ -1080,6 +1072,15 @@ Writer.prototype._show_image=function(idx,obj,as_preview=false)
     this._close_current_image();
     
     this._set_list_select(idx,as_preview);
+    if(obj.error){
+	let el=document.createElement('img');
+	el.dataset.path=this._idx2path(idx);
+	el.dataset.idx=idx;
+	this._current_image=el;
+	this._set_btn_inactive(this._elm.btn.edit_dispose);
+	return;
+    }
+    
     let el=this._elm.src_img;
     el.setAttribute('src',obj.image.body);
     el.dataset.originalWidth=obj.image.width;
@@ -1134,11 +1135,11 @@ Writer.prototype._set_list_select=function(idx,as_preview=false)
     if(!el)
 	return null;
     
-    let cls=el.getAttribute('class');
-    if(!cls)
-	cls=''
+    let cls=el.className||'';
+    cls=cls.replaceAll('selected','').trim();
     cls=(cls+' selected').trim();
-    el.setAttribute('class',cls);
+    el.className=cls;
+
     if(!as_preview)
 	this._list_cursor_pos=parseInt(idx);
     el.scrollIntoViewIfNeeded(false); // depends on WebKit
@@ -1149,12 +1150,32 @@ Writer.prototype._unset_list_select=function(idx)
     let el=this._get_list_item(idx);
     if(!el)
 	return;
-    let cls=el.getAttribute('class');
-    if(!cls)
-	return;
-
+    let cls=el.className||'';
     cls=cls.replaceAll('selected','').trim();
-    el.setAttribute('class',cls);
+
+    el.className=cls;
+}
+Writer.prototype._set_listitem_error=function(idx,e)
+{
+    let el=this._get_list_item(idx);
+    
+    if(!el)
+	return;
+    
+    if(el.dataset?.hasError)
+	return;
+    
+    this._parent?.show_error({
+	title:e.name,
+	message:e.message
+    })
+
+    el.dataset.hasError=true;
+    
+    let cls=el.className||'';
+    cls=cls.replaceAll('error','').trim();
+    cls=(cls+' error').trim();
+    el.className=cls;
 }
 Writer.prototype._set_anno_changed=function()
 {
@@ -1275,9 +1296,19 @@ Writer.prototype._do_image_open=function(
 }
 Writer.prototype._do_image_open.bare=function(idx,as_preview=false)
 {
-    let path=this._idx2path(idx);
+    let el=this._elm.filelist.getElementsByTagName('li')[idx];
+    if(!el)
+	return Promise.resolve();
+
+    if(el.dataset?.hasError){
+	this._show_image(idx,{error:true},as_preview);
+	return Promise.resolve();
+    }
+    
+    let path=el.dataset?.path;
     if(!path)
 	return Promise.resolve();
+
     return API.open_img(path).then(
 	(result)=>{
 	    if(result){
@@ -1286,9 +1317,11 @@ Writer.prototype._do_image_open.bare=function(idx,as_preview=false)
 	    }
 	    else
 		return Promise.reject('open-img');
-	},
-	(e)=>console.log(e)
-    );
+	}).catch((e)=>{
+	    console.log(e);
+	    this._set_listitem_error(idx,e);
+	    this._show_image(idx,{error:e},as_preview);
+	});
 }
 
 Writer.prototype._do_commit=function()

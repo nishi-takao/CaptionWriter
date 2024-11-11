@@ -354,11 +354,22 @@ html,body{
     background-color:#3a3a4a;
     font-weight:bold;
     text-shadow:1px 1px 2px #202020;
-} 
+}
+#filelist li.error{
+    color:#3a3a4a;
+    -webkit-text-fill-color:#3a3a4a;
+}
+#filelist li.error.selected{
+    color:#707090;
+    -webkit-text-fill-color:#707090;
+    font-weight:normal;
+    text-shadow:none;
+}
+
 #filelist li.no-image,
 *[disabled] #filelist li.no-image{
     color:#d0d0d0;
-    -webkit-text-fill-color:#d0d0d0;;
+    -webkit-text-fill-color:#d0d0d0;
     padding-top:52px;
     text-align:center;
     cursor:default;

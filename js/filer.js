@@ -358,11 +358,8 @@ Filer.prototype.build=function(obj)
 
     if(obj.error?.code?.match(CRIT_ERRS)){
 	let n=TreeNode.node_dic[TreeNode.raw2enc[obj.cwd]];
-	if(!n)
-	    return;
-	
-	if(this._cwd==n.path){
-	    let p=n._parent;
+	if((this._cwd==n?.path)||!this._cwd){
+	    let p=n?._parent;
 	    this._cwd=p?.path;
 	    p?.set_cwd();
 	}

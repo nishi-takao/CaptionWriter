@@ -23,6 +23,8 @@ function ImageItem(fn)
     
     this.test_annotation();
     this.img_sz=null;
+
+    this._error=null;
 };
 
 ImageItem.prototype.img2ann=function(fn)
@@ -48,27 +50,44 @@ ImageItem.prototype.read_all=async function()
     let anno=this.read_annotation();
     let sz=this.image_size();
     
-    return {
-	'image':{
-	    'width':sz ? sz.width : null,
-	    'height':sz ? sz.height : null,
-	    'body':await content
-	},
-	'anno':await anno
-    }
+    if(await content)
+	return {
+	    'image':{
+		'width':sz ? sz.width : null,
+		'height':sz ? sz.height : null,
+		'body':content
+	    },
+	    'anno':await anno
+	}
+    else
+	return null;
 }
 
 ImageItem.prototype.image_size=function()
 {
-    if(!this.img_sz)
-	this.img_sz=ImageSize(this.path);
+    if(!this.img_sz){
+	try{
+	    this.img_sz=ImageSize(this.path);
+	}
+	catch(e){
+	    console.log(e);
+	    this._error=e;
+	}
+    }
 
     return this.img_sz;
 }
 
 ImageItem.prototype.read_image=async function()
 {
-    let content=FS.readFileSync(this.path);
+    try{
+	let content=FS.readFileSync(this.path);
+    }
+    catch(e){
+	console.log(e);
+	this._error=e;
+	return null;
+    }
     let ft=await FileType.fromBuffer(content);
     ft=(ft && ft.mime) ? ft.mime : 'application/octet-stream';
 
@@ -89,8 +108,15 @@ ImageItem.prototype.read_annotation=async function()
     if(!this.annotation_path)
 	this.test_annotation();
     
-    if(this.has_annotation)
-	anno=FS.readFileSync(this.annotation_path).toString('utf-8')
+    if(this.has_annotation){
+	try{
+	    anno=FS.readFileSync(this.annotation_path).toString('utf-8')
+	}
+	catch(e){
+	    console.log(e);
+	    this._error=e;
+	}
+    }
     
     return anno;
 };
@@ -107,6 +133,7 @@ ImageItem.prototype.write_annotation=function(anno)
     }
     catch(e){
 	console.log(e);
+	this._error=e;
 	return false;
     }
 };
@@ -124,6 +151,7 @@ ImageItem.prototype.remove_annotation=function()
     }
     catch(e){
 	console.log(e);
+	this._error=e;
 	return false;
     }
     
@@ -135,12 +163,22 @@ ImageItem.prototype.dump=function(opt)
 	path_raw:this.path,
 	basename:this.basename(),
 	annotation_path:this.annotation_path,
-	has_annotation:this.has_annotation
+	has_annotation:this.has_annotation,
     };
 
     if(opt?.with_size)
 	obj.image_size=this.image_size();
 
+    if(this._error)
+	obj.error={
+	    name:this._error.name,
+	    message:this._error.message,
+	    errno:this._error.errno,
+	    code:this._error.code,
+	}
+    else
+	obj.error=null;
+    
     
     return obj;
 }

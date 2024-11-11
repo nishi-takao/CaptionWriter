@@ -166,26 +166,62 @@ Ipc.handle(
     }
 );
 
+const show_error=(t,m,y)=>{
+    win.webContents.send(
+	'show-error',
+	{
+	    title:t,
+	    message:m,
+	    type:y||'error'
+	}
+    );
+};
 let cwd=imagelist.cwd||config.cwd;
 Ipc.handle(
     'open-dir',
     async (event,path,preview)=>{
 	path||=(imagelist.cwd||'.');
-	if(preview)
-	    imagelist.get_dir(path)
-	else
-	    imagelist.scan(path);
-
-	if(imagelist._error)
-	    win.webContents.send(
-		'show-error',
-		{
-		    title:imagelist._error.name,
-		    message:
-		    `(${imagelist._error.errno}) ${imagelist._error.message}`
-		}
-	    );
+	let cond=true;
+	let p=path;
 	
+	while(cond){
+	    if(preview)
+		imagelist.get_dir(p)
+	    else
+		imagelist.scan(p);
+	    
+	    if(imagelist._error){
+		if(imagelist._error.code?.match(/(ENOENT|ENOTDIR)/)){
+		    let q=Path.resolve(Path.join(p,'..'));
+		    if(p==q){
+			show_error(
+			    'Critical Error',
+			    imagelist._error.message
+			);
+			cond=null;
+		    }
+		    else
+			p=q;
+		}
+		else{	
+		    show_error(
+			`${imagelist._error.name}
+ (${imagelist._error.errno})`,
+			imagelist._error.message
+		    );
+		    cond=false;
+		}
+	    }
+	    else
+		cond=false;
+	}
+	if(p!=path && !imagelist._error)
+	    show_error(
+		'Warning',
+		`Given path is rewritten to ${p}`,
+		'warn'
+	    );
+	    
 	return imagelist.dump();
     }
 );
@@ -193,9 +229,17 @@ Ipc.handle(
     'open-img',
     async (event,path)=>{
 	let item=imagelist.get_image(path);
-	if(item)
-	    item=await item.read_all();
-	
+	if(item){
+	    let img=await item.read_all();
+	    if(img)
+		item=img;
+	    else
+		show_error(
+		    `${item._error.name} (${item._error.errno})`,
+		    item._error.message
+		);
+	}
+
 	return item;
     }
 );
@@ -210,10 +254,15 @@ Ipc.handle(
     'read-anno',
     async (event,path)=>{
 	let item=imagelist.get_image(path);
-	if(item)
-	    item=await item.read_annotation();
+	let anno=await item?.read_annotation();
+	   
+	if(!(item && anno))
+	    show_error(
+		`${item._error.name} (${item._error.errno})`,
+		item._error.message
+	    );
 	
-	return item;
+	return anno;
     }
 );
 
@@ -226,16 +275,12 @@ Ipc.handle(
 	if(item && anno)
 	    retval=await item.write_annotation(anno);
 	
-	if(!retval){
-	    win.webContents.send(
-		'show-error',
-		{
-		    title:'I/O Error',
-		    message:`Some errors occurred when writing.
-See the console for details.`
-		}
+	if(!retval)
+	    show_error(
+		`${item._error.name} (${item._error.errno})`,
+		item._error.message
 	    );
-	}
+	
 	return retval;
     }
 );
@@ -247,16 +292,11 @@ Ipc.handle(
 	
 	if(item){
 	    retval=item.remove_annotation();
-	    if(!retval){
-		win.webContents.send(
-		    'show-error',
-		    {
-			title:'I/O Error',
-			message:`Some errors occurred when writing.
-See the console for details.`
-		    }
+	    if(!retval)
+		show_error(
+		    `${item._error.name} (${item._error.errno})`,
+		    item._error.message
 		);
-	    }
 	}
 	
 	return retval;

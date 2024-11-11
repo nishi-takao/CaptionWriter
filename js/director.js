@@ -495,8 +495,8 @@ Director.prototype.lock_with_loading=function(promise,lock)
 Director.prototype.show_error=function(args)
 {
     this.dialog.show({
-	type:'error',
-	title:args.title,
+	type:args.type||'error',
+	title:args.name||args.title,
 	message:args.message
     })
 }
@@ -527,19 +527,27 @@ Director.prototype.open_dir=function(dir,is_preview=false)
 	(lock)=>API.open_dir(dir,is_preview)
     ).then((result)=>{
 	this._filer.build(result);
+	if(this._filer._cwd!=result.cwd){
+	    if(this._filer._cwd)
+		return this.open_dir(this._filer._cwd,is_preview);
+	    else
+		return Promise.reject('dir-open');
+	}
+	
 	if(is_preview)
 	    this._writer._preview(result);
 	else
 	    this._writer._rendering(result,false,true);
 	
 	return Promise.resolve('dir-open');
-    }).catch((e)=>{
-	console.log(e);
+    }).catch((p)=>{
+	const message='Could not access to the root dirirectory';
+
+	console.log(`!!! CRITICAL !!! ${message}`);
 	this.show_error({
-	    title:e.name,
-	    message:e.message
+	    title: 'Critical Error',
+	    message: message
 	});
-	return Promise.reject('dir-open');
     });
 }
 
