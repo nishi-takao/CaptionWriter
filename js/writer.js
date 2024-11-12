@@ -22,6 +22,8 @@ function Writer(parent,config={})
     this.cwd=null;
     this._list_size=0;
     this._list_cursor_pos=null;
+    this._last_list_size=null;
+    this._last_list_cursor_pos=null;
     this._current_image=null;
     this._is_editing=null;
     this._has_changed=false;
@@ -813,16 +815,20 @@ Writer.prototype._rendering=function(
 
     if(this.cwd==imagelist.cwd)
 	keep_image=true;
-    
+
     let last_anno_idx=null;
-    this._erase_body(false,keep_image);
+    this._erase_body(keep_image);
     
     this._set_cwd(imagelist.cwd);
     last_anno_idx=this._build_filelist(imagelist);
+    if(this.cwd==imagelist.cwd &&
+       this._list_size==this._last_list_size)
+	this._list_cursor_pos=this._last_list_cursor_pos;
 
     this._fit_image();
+    this._last_list_size=this._list_size;
     
-    if(keep_image && this._list_cursor_pos!=null){
+    if(keep_image && !(this._list_cursor_pos===null)){
 	if(force_image_overwrite)
 	    this._do_image_open.bare.call(
 		this,
@@ -844,7 +850,7 @@ Writer.prototype._rendering=function(
 }
 Writer.prototype._preview=function(imagelist)
 {
-    this._erase_body(false,false);
+    this._erase_body(false);
     this._set_cwd(imagelist.cwd,true);
 
     if(imagelist.images && imagelist.images.length>0){
@@ -864,8 +870,12 @@ Writer.prototype._preview=function(imagelist)
 	    idx+=1;
 	},this);
 
-	this._do_image_open(0,null,true).then(
-	    //(p)=>this._set_btn_inactive(this._elm.btn.edit_dispose)
+	let cp=0;
+	if(this.cwd==imagelist.cwd &&
+	   this._last_list_size==imagelist.images.length)
+	    cp=this._last_list_cursor_pos;
+	
+	this._do_image_open(cp,null,true).then(
 	    (p)=>this._set_all_inactive()
 	).catch((e)=>{
 	    console.log(e);
@@ -892,13 +902,12 @@ Writer.prototype._set_list_btn_active=function()
 }
 
 
-Writer.prototype._erase_body=function(keep_list,keep_img)
+Writer.prototype._erase_body=function(keep_img)
 {
-    if(!keep_img)
+    if(!keep_img){
 	this._close_current_image();
-    
-    if(keep_list)
-	return;
+	this._list_cursor_pos=null;
+    }
     
     //
     // clear header
@@ -912,7 +921,6 @@ Writer.prototype._erase_body=function(keep_list,keep_img)
     //
     while(this._elm.filelist.firstChild)
 	this._elm.filelist.removeChild(this._elm.filelist.firstChild);
-    this._list_cursor_pos=null;
 }
 
 Writer.prototype._set_cwd=function(cwd,display_only=false)
@@ -1141,7 +1149,8 @@ Writer.prototype._set_list_select=function(idx,as_preview=false)
     el.className=cls;
 
     if(!as_preview)
-	this._list_cursor_pos=parseInt(idx);
+	this._last_list_cursor_pos=this._list_cursor_pos=parseInt(idx);
+
     el.scrollIntoViewIfNeeded(false); // depends on WebKit
     return el;
 }

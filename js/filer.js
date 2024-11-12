@@ -330,7 +330,8 @@ function Filer(parent,config={})
 
     this._elm.btn={};
     this._elm.btn.open=document.getElementById('filer-open');
-    this._elm.btn.cancel=document.getElementById('filercancel');
+    this._elm.btn.reload=document.getElementById('filer-reload');
+    this._elm.btn.cancel=document.getElementById('filer-cancel');
 
     this._add_event_listeners();
 }
@@ -512,7 +513,7 @@ Filer.prototype.cmd_open=function(target)
     
     this._parent.close_tree(target.path);
 }
-Filer.prototype.cmd_cancel=function(target)
+Filer.prototype.cmd_cancel=function()
 {
     this._parent.close_tree(null);
 }
@@ -539,6 +540,7 @@ Filer.prototype.cmd_set_cwd=function(
     if(force_scan||!target.has_error){
 	this._parent.open_dir(target.path,true).then((p)=>{
 	    target.set_cwd();
+	    this._elm.btn.open.disabled=p.error ? true : false;
 	    target._element.scrollIntoView({
 		block:'start',
 		inline:'nearest'
@@ -547,8 +549,10 @@ Filer.prototype.cmd_set_cwd=function(
 	});
     }
     else{
+	this._parent.show_empty_preview(target.path_raw);
 	this._cwd=target.path;
 	target.set_cwd();
+	this._elm.btn.open.disabled=true;
 	target._element.scrollIntoView({
 	    block:'start',
 	    inline:'nearest'
@@ -567,6 +571,41 @@ Filer.prototype._set_config=function(c)
 
 Filer.prototype._add_event_listeners=function()
 {
+    // buttons
+    this._elm.btn.open.addEventListener(
+	'click',
+	(event)=>{
+	    if(this._is_loading())
+		return;
+	    let obj=TreeNode.node_dic[this._cwd];
+	    if(!obj)
+		return;
+	    
+	    this.cmd_open(obj);
+	}
+    );
+    this._elm.btn.reload.addEventListener(
+	'click',
+	(event)=>{
+	    if(this._is_loading())
+		return;
+	    let obj=TreeNode.node_dic[this._cwd];
+	    if(!obj)
+		return;
+	    
+	    this.cmd_rescan(obj);
+	}
+    );
+    this._elm.btn.reload.addEventListener(
+	'click',
+	(event)=>{
+	    if(this._is_loading())
+		return;
+	    
+	    this.cmd_cancel();
+	}
+    );
+
     const onclick=(event)=>{
 	delete this._click_timer[event.target];
 	let obj=TreeNode.node_dic[event.target?.dataset?.path];
@@ -616,7 +655,7 @@ Filer.prototype._add_event_listeners=function()
 
 Filer.prototype._buid_global_event_listners=function()
 {
-    const JUMP_KEYS=/^[\._~\-a-zA-Z0-9]$/;
+    const JUMP_KEYS=/^[\,\._~\-\+\=a-zA-Z0-9]$/;
     
     this._global_event_listners=[
 	{
@@ -630,6 +669,9 @@ Filer.prototype._buid_global_event_listners=function()
 		    }
 		    return;
 		}
+		else if(this._parent._dialog._status=='opend')
+		    return;
+		
 		let obj=TreeNode.node_dic[this._cwd];
 		if(!obj)
 		    return;
@@ -684,18 +726,27 @@ Filer.prototype._buid_global_event_listners=function()
 			this.cmd_toggle_expand(obj);
 		    break;
 		default:
-		    if(event.key.match(JUMP_KEYS)){
-			if(!(event.ctrlKey||event.altKey)){
-			    event.preventDefault();
-			    event.stopPropagation();
-			    this.cmd_move_to(obj,event.key)
-			}
-			else if(event.key=='L'){
+		    if(event.ctrlKey){
+			switch(event.key){
+			case 'L':
 			    event.preventDefault();
 			    event.stopPropagation();
 			    this._parent.screen_guard.toggle_screenlock();
+			    break;
+			case 'r':
+			    event.preventDefault();
+			    event.stopPropagation();
+			    this.cmd_rescan(obj);
+			    break;
 			}
-
+		    }
+		    else if(event.altKey){
+			// nop
+		    }
+		    else if(event.key.match(JUMP_KEYS)){
+			event.preventDefault();
+			event.stopPropagation();
+			this.cmd_move_to(obj,event.key);
 		    }
 		    //console.log([event,event.key.charCodeAt()]);
 		}

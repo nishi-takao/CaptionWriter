@@ -474,6 +474,7 @@ Director=function(config={})
     this._writer.attach();
 
     this._writer_last_wd=null;
+    this._filer_first_wd=null;
 }
 
 Director.prototype.lock_with_loading=function(promise,lock)
@@ -507,13 +508,18 @@ Director.prototype.open_tree=function(dir)
 
     this._writer.detach();
     this._filer.attach();
-    this.open_dir(dir,true);
+    this.open_dir(dir,true).then(
+	(p)=>this._filer_first_wd=this._filer._cwd
+    );
 }
 
 Director.prototype.close_tree=function(dir)
 {
     if(!dir)
-	dir=this._writer_last_wd||this._filer._cwd;
+	dir=this._writer_last_wd||this._filer_first_wd;
+
+    if(!dir)
+	return;
 
     this.open_dir(dir,false).then((p)=>{
 	this._filer.detach();
@@ -539,7 +545,7 @@ Director.prototype.open_dir=function(dir,is_preview=false)
 	else
 	    this._writer._rendering(result,false,true);
 	
-	return Promise.resolve('dir-open');
+	return Promise.resolve(result);
     }).catch((p)=>{
 	const message='Could not access to the root dirirectory';
 
@@ -550,8 +556,10 @@ Director.prototype.open_dir=function(dir,is_preview=false)
 	});
     });
 }
-
-
+Director.prototype.show_empty_preview=function(cwd=null)
+{
+    this._writer._preview({cwd:cwd||''});
+}
 
 Director.prototype._set_config=function(c)
 {

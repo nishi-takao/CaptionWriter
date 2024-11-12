@@ -198,7 +198,10 @@ html,body{
 #filer button{
     box-sizing:border-box;
     background-color:#505060;
-    margin:0 24pt;
+    margin:0 16pt;
+}
+#filer button[disabled]{
+    color:#3a3a4a;
 }
 
 #writer{
