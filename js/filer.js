@@ -376,6 +376,12 @@ Filer.prototype.build=function(obj)
 	    o.set_cwd();
 	    if(obj.dirs)
 		o.set_fixed(obj);
+	    this._elm.btn.open.disabled=o.error ? true : false;
+	    o._element.scrollIntoView({
+		block:'center',
+		inline:'nearest'
+	    });
+
 	}
     }
 }
@@ -388,7 +394,6 @@ Filer.prototype.attach=function()
 	    obj.opt
 	)
     },this);
-    this._elm.btn.open.disabled=false;
    
     return this;
 }
