@@ -231,15 +231,12 @@ Ipc.handle(
 	let item=imagelist.get_image(path);
 	if(item){
 	    let img=await item.read_all();
-	    if(img)
-		item=img;
+	    if(img && !item._error)
+		return img;
 	    else
-		show_error(
-		    `${item._error.name} (${item._error.errno})`,
-		    item._error.message
-		);
+		return {error:item._error};
 	}
-
+	
 	return item;
     }
 );

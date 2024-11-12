@@ -46,16 +46,19 @@ ImageItem.prototype.read_all=async function()
     if(this.is_dir)
 	return null;
     
-    let content=this.read_image();
+    this._error=null;
+
+    let c_promise=this.read_image();
     let anno=this.read_annotation();
     let sz=this.image_size();
     
-    if(await content)
+    let content=await c_promise;
+    if(content && sz)
 	return {
 	    'image':{
-		'width':sz ? sz.width : null,
-		'height':sz ? sz.height : null,
-		'body':content
+		'width':sz.width,
+		'height':sz.height,
+		'body':await content
 	    },
 	    'anno':await anno
 	}
@@ -72,6 +75,7 @@ ImageItem.prototype.image_size=function()
 	catch(e){
 	    console.log(e);
 	    this._error=e;
+	    this.img_sz=null;
 	}
     }
 
@@ -80,8 +84,9 @@ ImageItem.prototype.image_size=function()
 
 ImageItem.prototype.read_image=async function()
 {
+    let content;
     try{
-	let content=FS.readFileSync(this.path);
+	content=FS.readFileSync(this.path);
     }
     catch(e){
 	console.log(e);

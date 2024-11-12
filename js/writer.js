@@ -1311,12 +1311,12 @@ Writer.prototype._do_image_open.bare=function(idx,as_preview=false)
 
     return API.open_img(path).then(
 	(result)=>{
-	    if(result){
+	    if(result && !result.error){
 		this._show_image(idx,result,as_preview);
 		return Promise.resolve('open-img');
 	    }
 	    else
-		return Promise.reject('open-img');
+		return Promise.reject(result?.error||'open-img');
 	}).catch((e)=>{
 	    console.log(e);
 	    this._set_listitem_error(idx,e);
