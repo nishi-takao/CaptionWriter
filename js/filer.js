@@ -388,7 +388,8 @@ Filer.prototype.attach=function()
 	    obj.opt
 	)
     },this);
-    
+    this._elm.btn.open.disabled=false;
+   
     return this;
 }
 Filer.prototype.detach=function()

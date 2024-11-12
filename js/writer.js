@@ -349,10 +349,6 @@ Writer.prototype._add_listeners=function()
     //
     // cwd area
     //
-    this._elm.cwd.addEventListener(
-	'click',
-	this.cmd_dir_open.bind(this)
-    );
     this._elm.filelist.addEventListener(
 	'focus',
 	(event)=>{
@@ -855,6 +851,7 @@ Writer.prototype._preview=function(imagelist)
 
     if(imagelist.images && imagelist.images.length>0){
 	let idx=0;
+	let cursor_pos=0;
 	imagelist.images.forEach(function(obj){
 	    let li=document.createElement('li');
 	    li.textContent=decodeURI(obj.basename);
@@ -862,20 +859,21 @@ Writer.prototype._preview=function(imagelist)
 	    li.dataset.path=obj.path;
 	    li.dataset.idx=idx;
 	    
-	    if(obj.has_annotation)
+	    if(obj.has_annotation){
 		li.dataset.hasAnnotation='true';
+		cursor_pos=idx;
+	    }
 	    
 	    this._elm.filelist.appendChild(li);
 	    
 	    idx+=1;
 	},this);
-
-	let cp=0;
+	
 	if(this.cwd==imagelist.cwd &&
 	   this._last_list_size==imagelist.images.length)
-	    cp=this._last_list_cursor_pos;
+	    cursor_pos=this._last_list_cursor_pos;
 	
-	this._do_image_open(cp,null,true).then(
+	this._do_image_open(cursor_pos,null,true).then(
 	    (p)=>this._set_all_inactive()
 	).catch((e)=>{
 	    console.log(e);
@@ -896,7 +894,6 @@ Writer.prototype._preview=function(imagelist)
 
 Writer.prototype._set_list_btn_active=function()
 {
-    this._set_btn_active(this._elm.cwd);
     this._set_btn_active(this._elm.btn.list_open);
     this._set_btn_active(this._elm.btn.list_rescan);
 }
@@ -1254,7 +1251,6 @@ Writer.prototype._is_btn_active=function(obj)
 }
 Writer.prototype._set_all_inactive=function()
 {
-    this._set_btn_inactive(this._elm.cwd);
     Object.values(this._elm.btn).forEach((el)=>{
 	this._set_btn_inactive(el);
     });

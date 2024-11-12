@@ -122,24 +122,6 @@ html,body{
 #filer li.open:before{
     content:'\f07c';
 }
-#filer li.open.unfixed:after{
-    display:inline-block;
-    position:absolute;
-    left:1.6em;
-    top:0.1em;
-    width:9pt;
-    height:9pt;
-    line-height:9pt;
-    text-align:center;
-    border-radius:50%;
-    border:none;
-    font-size:8pt;
-    font-family:"Font Awesome 6 Free";
-    font-weight:900;
-    content:'\f059';
-    color:#b0b0e0;
-    background-color:#606070;
-}
 #filer li.drive-list{
     margin:0;
     padding:0;
@@ -501,20 +483,15 @@ button{
     margin:0 6pt;
     background-color:#3a3a4a;
 }
-#cwd:hover,
 button:hover{
     color:#a0a0a0;
     text-shadow:-2px -2px -1px #202020;
 }
-#cwd:active,
 #list-navi button:active,
 #edit-navi button:active{
     color:#ffa500;
 }
 
-/*
-*[disabled] #edit-navi button,
-*/
 *[disabled],
 #edit-navi button[disabled],
 #edit-navi button[disabled]:hover
@@ -524,12 +501,6 @@ button:hover{
     cursor:default;
 }
 
-/*
-*[disabled] #cwd,
-*[disabled] #list-navi button,
-*/
-#cwd[disabled],
-#cwd[disabled]:hover,
 #list-navi button[disabled],
 #list-navi button[disabled]:hover
 {
@@ -544,7 +515,6 @@ dialog{
     padding:16px 16px;
     width:512px;
     height:368px;
-    /*overflow:hidden;*/
     overflow:auto;
     left:calc(91px + 50% - 256px); /* 182px+(100%-182px-512px)/2 */
     top:calc(13px + 25% - 184px); /* 52px+(100%-52px-104px)/4-202px */
@@ -667,10 +637,6 @@ dialog button:focus{
 }
 #lock-screen.loading{
     display:block;
-    /*
-    background-color:#00000040;
-    backdrop-filter: blur(1px);
-    */
 }
 #lock-screen.locking{
     display:block;
