@@ -563,7 +563,7 @@ Writer.prototype._add_listeners=function()
 		else if(this._has_changed)
 		    this._do_discard().then(
 			(r)=>event.target.focus()
-		    )
+		    ).catch((e)=>{console.log(e)});
 		else
 		    this._elm.filelist.focus();
 		break;

@@ -251,15 +251,24 @@ Ipc.handle(
     'read-anno',
     async (event,path)=>{
 	let item=imagelist.get_image(path);
-	let anno=await item?.read_annotation();
+	if(item){
+	    let anno=await item.read_annotation();
 	   
-	if(!(item && anno))
+	    if(anno)
+		return anno;
+	    else
+		show_error(
+		    `${item._error.name} (${item._error.errno})`,
+		    item._error.message
+		);
+	}
+	else{
 	    show_error(
-		`${item._error.name} (${item._error.errno})`,
-		item._error.message
+		'Not found',
+		`${path} is not found`
 	    );
-	
-	return anno;
+	    return item;
+	}
     }
 );
 
