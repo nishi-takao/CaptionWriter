@@ -31,6 +31,11 @@ $ cd Path/where/CaptionWriter/downloaded
 $ ./node_modules/.bin/electron .
 ```
 
+### Caption files
+Your caption will be saved in the same folder as the original image with the file name changed to '.caption' with the extension of the original image.
+For example, the caption for `/some/where/image.jpg` will be saved as `/some/where/image.caption`.
+
+The `*.caption` file is a UTF-8 text file.
 
 ## License
 
