@@ -533,7 +533,7 @@ Director.prototype.open_dir=function(dir,is_preview=false)
 	(lock)=>API.open_dir(dir,is_preview)
     ).then((result)=>{
 	this._filer.build(result);
-	if(this._filer._cwd!=result.cwd){
+	if(!this._filer.is_cwd(result.cwd)){
 	    if(this._filer._cwd)
 		return this.open_dir(this._filer._cwd,is_preview);
 	    else

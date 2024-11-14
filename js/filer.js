@@ -567,6 +567,11 @@ Filer.prototype.cmd_set_cwd=function(
     }
 }
 
+Filer.prototype.is_cwd=function(dir)
+{
+    return this._cwd==dir||this._cwd==TreeNode.raw2enc[dir];
+}
+
 Filer.prototype._set_config=function(c)
 {
     if(this._config)
