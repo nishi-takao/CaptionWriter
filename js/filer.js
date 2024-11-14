@@ -264,11 +264,16 @@ TreeNode.prototype.set_cwd=function()
 {
     this._is_cwd=true;
     this._build_className();
-    if(this.is_drive || !this._parent)
-	return this;
-    else
+    if(this._parent && !this.is_drive)
 	this._parent.expand();
 
+    let c_rect=this._element.getClientRects();
+    if(c_rect.length>0)
+	this._element.scrollIntoView({
+	    block:c_rect[0].top<0 ? 'start' : 'center',
+	    inline:'nearest'
+	});
+    
     return this;
 }
 TreeNode.prototype.unset_cwd=function()
@@ -373,15 +378,10 @@ Filer.prototype.build=function(obj)
 	this._cwd=TreeNode.raw2enc[obj.cwd];
 	let o=TreeNode.node_dic[this._cwd];
 	if(o){
-	    o.set_cwd();
 	    if(obj.dirs)
 		o.set_fixed(obj);
+	    o.set_cwd();
 	    this._elm.btn.open.disabled=o.error ? true : false;
-	    o._element.scrollIntoView({
-		block:'center',
-		inline:'nearest'
-	    });
-
 	}
     }
 }
@@ -547,10 +547,6 @@ Filer.prototype.cmd_set_cwd=function(
 	this._parent.open_dir(target.path,true).then((p)=>{
 	    target.set_cwd();
 	    this._elm.btn.open.disabled=p.error ? true : false;
-	    target._element.scrollIntoView({
-		block:'start',
-		inline:'nearest'
-	    });
 	    return p;
 	});
     }
@@ -559,10 +555,6 @@ Filer.prototype.cmd_set_cwd=function(
 	this._cwd=target.path;
 	target.set_cwd();
 	this._elm.btn.open.disabled=true;
-	target._element.scrollIntoView({
-	    block:'start',
-	    inline:'nearest'
-	});
 	return Promise.resolve('cwd_on_error');
     }
 }
