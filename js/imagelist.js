@@ -297,7 +297,7 @@ DirItem.prototype.root_node=function()
     else
 	return this;
 }
-DirItem.prototype.dump=function(dir=1,prev_obj=null)
+DirItem.prototype.dump=function(dir=1)
 {
     let obj={
 	path: this._URIarm ? encodeURI(this.path) : this.path,
@@ -309,10 +309,10 @@ DirItem.prototype.dump=function(dir=1,prev_obj=null)
     if(dir>0){
 	let d=this.dirs.keys().toArray();
 	d.sort();
-	obj.dirs=d.map((k)=>this.dirs.get(k).dump(dir,this));
+	obj.dirs=d.map((k)=>this.dirs.get(k).dump(dir));
     }
     else if(dir<0)
-	obj.parent=this.parent ? this.parent.dump(dir,this) : null;
+	obj.parent=this.parent ? this.parent.dump(dir) : null;
     
     return obj;
 }
@@ -375,20 +375,15 @@ DriveNode.prototype=Object.create(
 	}
     }
 );
-DriveNode.prototype.dump=function(dir,prev_obj=null)
+DriveNode.prototype.dump=function(dir)
 {
     let d=this.dirs.keys().toArray();
     d.sort();
-    let obj={
+    return {
 	path: this.path,
-	path_raw: this.path
+	path_raw: this.path,
+	drives: d.map((k)=>this.dirs.get(k).dump(dir<0 ? 0 : dir))
     };
-    
-    if(dir>0)
-	obj.drives=d.map((k)=>this.dirs.get(k).dump(dir));
-    else if(dir<0)
-	obj.drives=d.map((k)=>this.dirs.get(k).dump(0));
-    return obj;
 }
 //
 // end of DriveNode
