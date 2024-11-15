@@ -253,22 +253,22 @@ Ipc.handle(
 	let item=imagelist.get_image(path);
 	if(item){
 	    let anno=await item.read_annotation();
-	   
-	    if(anno)
-		return anno;
-	    else
+	    if(item._error){
 		show_error(
 		    `${item._error.name} (${item._error.errno})`,
 		    item._error.message
 		);
+		anno=null;
+	    }
+	    return anno;
 	}
-	else{
+	else
 	    show_error(
 		'Not found',
 		`${path} is not found`
 	    );
-	    return item;
-	}
+
+	return null;
     }
 );
 

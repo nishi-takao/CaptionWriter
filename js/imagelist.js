@@ -231,10 +231,11 @@ function DirItem(path,recurse=true)
     this.is_drive=false;
     this.dirs=new Map();
     this.parent=null;
-    this._URIarm=false;
+    this._URIarm||=false;
     
     if(path)
 	this.build(path,recurse);
+
 }
 DirItem.DriveNode=null;
 
@@ -242,9 +243,11 @@ DirItem.prototype.build=function(path,recurse=true)
 {
     this.path=Path.resolve(path);
     this.basename=Path.basename(this.path);
-    if(process.platform=='win32' && path.endsWith(':'))
+    if(process.platform=='win32' && path.endsWith(':\\')){
 	this.is_drive=true;
-	
+	this.basename=this.path.slice(0,this.path.length-1);
+    }
+
     if(!recurse)
 	return this;
     
@@ -259,7 +262,7 @@ DirItem.prototype.build=function(path,recurse=true)
 		d.parent=null;
 		this.parent.dirs.delete(this.path);
 	    }
-	    this.parent.add_child(this)
+	    this.parent.add_child(this);
 	}
 	else
 	    this.parent=null;
@@ -294,7 +297,7 @@ DirItem.prototype.root_node=function()
     else
 	return this;
 }
-DirItem.prototype.dump=function(dir=1)
+DirItem.prototype.dump=function(dir=1,prev_obj=null)
 {
     let obj={
 	path: this._URIarm ? encodeURI(this.path) : this.path,
@@ -306,10 +309,10 @@ DirItem.prototype.dump=function(dir=1)
     if(dir>0){
 	let d=this.dirs.keys().toArray();
 	d.sort();
-	obj.dirs=d.map((k)=>this.dirs.get(k).dump(dir));
+	obj.dirs=d.map((k)=>this.dirs.get(k).dump(dir,this));
     }
     else if(dir<0)
-	obj.parent=this.parent ? this.parent.dump(dir) : null;
+	obj.parent=this.parent ? this.parent.dump(dir,this) : null;
     
     return obj;
 }
@@ -324,8 +327,8 @@ DirItem.prototype.dump=function(dir=1)
 //
 function URIarmedDirItem(path,recurse=true)
 {
-    DirItem.prototype.constructor.call(this,path,recurse);
     this._URIarm=true;
+    DirItem.prototype.constructor.call(this,path,recurse);
 }
 URIarmedDirItem.prototype=Object.create(
     DirItem.prototype,
@@ -353,12 +356,12 @@ function DriveNode(with_URIarm)
     
     this.path='\\\\';
     this._URIarm=with_URIarm;
-    const D=with_URIarm ? URIarmedDirNode: DirNode;
+    const D=with_URIarm ? URIarmedDirItem: DirItem;
     
     let drives=require('windows-drive-letters').usedSync();
 
     drives.forEach((d)=>{
-	this.add_child(new D(d+':',false));
+	this.add_child(new D(d+':\\',false));
     });
 }
 DriveNode.prototype=Object.create(
@@ -372,15 +375,20 @@ DriveNode.prototype=Object.create(
 	}
     }
 );
-DriveNode.prototype.dump=function(dir)
+DriveNode.prototype.dump=function(dir,prev_obj=null)
 {
     let d=this.dirs.keys().toArray();
     d.sort();
-    return {
+    let obj={
 	path: this.path,
-	path_raw: this.path,
-	drives: d.map((k)=>this._dirs.get(k).dump(dir)),
+	path_raw: this.path
     };
+    
+    if(dir>0)
+	obj.drives=d.map((k)=>this.dirs.get(k).dump(dir));
+    else if(dir<0)
+	obj.drives=d.map((k)=>this.dirs.get(k).dump(0));
+    return obj;
 }
 //
 // end of DriveNode
