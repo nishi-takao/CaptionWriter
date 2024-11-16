@@ -181,46 +181,50 @@ Ipc.handle(
     'open-dir',
     async (event,path,preview)=>{
 	path||=(imagelist.cwd||'.');
-	let cond=true;
 	let p=path;
 	
-	while(cond){
+	while(true){
 	    if(preview)
 		imagelist.get_dir(p)
 	    else
 		imagelist.scan(p);
 	    
-	    if(imagelist._error){
-		if(imagelist._error.code?.match(/(ENOENT|ENOTDIR)/)){
-		    let q=Path.resolve(Path.join(p,'..'));
-		    if(p==q){
+	    if(!imagelist._error)
+		break;
+	    
+	    if(imagelist._error.code?.match(/(ENOENT|ENOTDIR)/)){
+		//
+		// when the given directory is not found,
+		// try to access to the parent
+		//
+		let q=Path.resolve(Path.join(p,'..'));
+
+		// when met errors on the root directory
+		if(p==q){
+		    // for removable drives on Windows
+		    if(imagelist.is_drive && q!='C:\\'){
+			p='C:\\';
+		    }
+		    else{
 			show_error(
 			    'Critical Error',
 			    imagelist._error.message
 			);
-			cond=null;
+			break;
 		    }
-		    else
-			p=q;
 		}
-		else{	
-		    show_error(
-			`${imagelist._error.name}
- (${imagelist._error.errno})`,
-			imagelist._error.message
-		    );
-		    cond=false;
-		}
+		else
+		    p=q;
 	    }
-	    else
-		cond=false;
+	    else{	
+		show_error(
+		    `${imagelist._error.name}
+ (${imagelist._error.errno})`,
+		    imagelist._error.message
+		);
+		break;
+	    }
 	}
-	if(p!=path && !imagelist._error)
-	    show_error(
-		'Warning',
-		`Given path is rewritten to ${p}`,
-		'warn'
-	    );
 	    
 	return imagelist.dump();
     }

@@ -237,7 +237,6 @@ function DirItem(path,recurse=true)
 	this.build(path,recurse);
 
 }
-DirItem.DriveNode=null;
 
 DirItem.prototype.build=function(path,recurse=true)
 {
@@ -254,9 +253,7 @@ DirItem.prototype.build=function(path,recurse=true)
     let _p=Path.resolve(Path.join(path,'..'));
     if(_p==path){
 	if(this.is_drive){
-	    if(!DirItem.DriveNode)
-		DirItem.DriveNode=new DriveNode(this._URIarm);
-	    this.parent=DirItem.DriveNode;
+	    this.parent=new DriveNode(this._URIarm);
 	    let d=this.parent.dirs.get(this.path);
 	    if(d){
 		d.parent=null;
