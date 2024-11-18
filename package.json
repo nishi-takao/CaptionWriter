@@ -1,7 +1,7 @@
 {
     "name": "caption_writer",
     "productName": "Caption Writer",
-    "version": "0.9.5",
+    "version": "1.0.0",
     "main": "main.js",
     "description": "Caption Writer is a tool to easily create captioned image datasets for training VL models.",
     "keywords": [],
@@ -13,7 +13,8 @@
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "postinstall": "node postinstall.js"
+        "postinstall": "node postinstall.js",
+	"start": "electron ."
     },
     "dependencies": {
         "@fortawesome/fontawesome-free": "^6.6.0",

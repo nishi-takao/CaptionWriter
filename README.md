@@ -19,7 +19,7 @@ It's a GUI tool, but almost all operations can be done using just the keyboard.
   * [FontAwesome 6 Free](https://www.npmjs.com/package/@fortawesome/fontawesome-free)
 
 1. install node.js and npm
-2. run `npm install` to install the remaining dependent libraries (electron, fontawesome-free, roboto-fontface, file-type and image-size)
+2. run `npm install` to install the remaining dependent libraries (electron, fontawesome-free, roboto-fontface, file-type, image-size and windows-drive-letters)
 
 ```
 $ cd Path/where/CaptionWriter/downloaded
@@ -37,6 +37,15 @@ Your caption will be saved in the same folder as the original image with the fil
 For example, the caption for `/some/where/image.jpg` will be saved as `/some/where/image.caption`.
 
 The `*.caption` file is a UTF-8 text file.
+
+### Command-line options
+
+```
+--config-file file, -c file :full path of the config file (~/.capw)
+--config-dir dir, -C dir    :config files directory (~)
+--data-dir dir, -d dir      :data files directory (.)
+--ignore-last-status        :ignore the last status file on start up
+```
 
 ## License
 
