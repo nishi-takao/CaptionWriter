@@ -3,6 +3,7 @@
 //
 "use strict";
 
+const NODE_Util=require('node:util'); 
 const Electron=require('electron');
 const App=Electron.app;
 const BrowserWindow=Electron.BrowserWindow;
@@ -14,15 +15,36 @@ const FS=require('fs');
 const ImageList=require(Path.join(__dirname,'js','imagelist'));
 const Util=require(Path.join(__dirname,'js','util'));
 
-//const NODE_Util = require('node:util'); 
-
 const WINDOW_MIN_WIDTH=800;
 const WINDOW_MIN_HEIGHT=720;
 
+const CMD_OPTIONS={
+    'config-file':{
+	type:'string',
+	short:'c',
+    },
+    'config-dir':{
+	type:'string',
+	short:'C',
+    },
+    'data-dir':{
+	type:'string',
+	short:'d',
+    },
+    'ignore-last-status':{
+	type:'boolean'
+    }
+};
 
-const HOME=require('os').homedir();
+const ARGS=process.argv.slice(2);
+const OPTS=NODE_Util.parseArgs({
+    args:ARGS,
+    options:CMD_OPTIONS
+}).values;
+
+const HOME=OPTS['config-dir']||require('os').homedir();
 const RC_PREFIX='.capw';
-const CONFIG_FILE=Path.join(HOME,RC_PREFIX);
+const CONFIG_FILE=OPTS['config-file']||Path.join(HOME,RC_PREFIX);
 const LAST_STAT_FILE=Path.join(HOME,RC_PREFIX+'.last-stat');
 
 let config={
@@ -43,7 +65,7 @@ let config={
 	autocomplete:false,
 	lockscreen_message:''
     },
-    cwd:'.'
+    wd:'.'
 }
 
 try{
@@ -53,13 +75,16 @@ try{
 catch(e){
 }
 
-if(!config.ignore_last_status){
+if(!(OPTS['ignore-last-status']||config.ignore_last_status)){
     try{
 	let s=JSON.parse(FS.readFileSync(LAST_STAT_FILE,'utf8'));
 	Util.objectDeepMerge(config,s);
     }
     catch(e){}
 }
+
+if(OPTS['data-dir'])
+    config.wd=OPTS['data-dir'];
 
 const AUTHOR=require(Path.join(__dirname,'package.json')).author;
 const COPYRIGHT_YEAR='2024';
@@ -73,12 +98,12 @@ config.UI.appInfo={
 let win=null;
 let imagelist=new ImageList({with_URIarm:true});
 
-if(config.cwd){
+if(config.wd){
     try{
-	imagelist.scan(config.cwd);
+	imagelist.scan(config.wd);
     }
     catch(e){
-	config.cwd='.'
+	config.wd='.'
 	console.log(e);
     }
 }
@@ -105,8 +130,6 @@ App.on("ready", () => {
 	webPreferences:{
 	    sandbox:false,
 	    preload:Path.join(__dirname,'js','preload.js'),
-	    //nodeIntegration:true,
-	    //contextIsolation:false,
 	}
     });
 
@@ -129,7 +152,7 @@ App.on("ready", () => {
 			if(config.save_last_status){
 			    let j=JSON.stringify({
 				window:win.getBounds(),
-				cwd:imagelist.cwd||imagelist._wd
+				wd:imagelist.cwd||imagelist._wd
 			    },null,2);
 			    try{
 				FS.writeFileSync(LAST_STAT_FILE,j);
@@ -176,7 +199,7 @@ const show_error=(t,m,y)=>{
 	}
     );
 };
-let cwd=imagelist.cwd||config.cwd;
+let cwd=imagelist.cwd||config.wd;
 Ipc.handle(
     'open-dir',
     async (event,path,preview)=>{
