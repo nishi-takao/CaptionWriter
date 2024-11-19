@@ -13,7 +13,7 @@ $ ./build.sh
 ## Running
 Run run.sh with path to data directory.
 
-For example, if you want to add a caption to images in `/some/where/images`, you would do the following;
+For example, if you want to add captions to each image in `/some/where/images`, do the following;
 
 ```
 $ ./run.sh /some/where/images
