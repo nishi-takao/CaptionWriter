@@ -14,7 +14,9 @@ RUN set -ex && \
     libdrm2 \
     libgbm1 \
     libcanberra-gtk* \
-    gosu --no-install-recommends && \
+    fonts-noto-cjk \
+    gosu \
+    --no-install-recommends && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 COPY . /home/node/app

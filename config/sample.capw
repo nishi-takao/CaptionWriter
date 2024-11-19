@@ -1,0 +1,13 @@
+{
+   "DEBUG": false,
+   "save_last_status": true,
+   "ignore_last_status": false,
+   "UI": {
+	"hide_titlebar": false,
+	"auto_commit": true,
+	"dispose_without_confirm": false,
+	"spellcheck": true,
+	"autocomplete": false,
+	"lockscreen_message": ''
+     }
+}
