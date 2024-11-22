@@ -18,21 +18,65 @@ const Util=require(Path.join(__dirname,'js','util'));
 const WINDOW_MIN_WIDTH=800;
 const WINDOW_MIN_HEIGHT=720;
 
+function usage(opts){
+    const build_msg=(k,v)=>{
+	if(!v)
+	    return '';
+	
+	let s=`  --${k}`;
+	let arg=v.type=='string' ? ' arg' : '';
+	s+=arg;
+	if(v.short)
+	    s+=`, -${v.short}${arg}`;
+	
+	if(v.description)
+	    s+=` : ${v.description}`;
+	
+	return s;
+    };
+    
+    console.error('USAGE:');
+    let help=null;
+    for(const [k,v] of Object.entries(opts)){
+	let msg=build_msg(k,v);
+	if(k=='help')
+	    help=msg;
+	else
+	    console.error(msg);
+    }
+    console.error('\n');
+    if(help){
+	console.error(help);
+	console.error('\n');
+    }
+    
+    App.exit(-1);
+}
+
 const CMD_OPTIONS={
     'config-file':{
 	type:'string',
 	short:'c',
+	description:'full path of the configuration file'
     },
     'config-dir':{
 	type:'string',
 	short:'C',
+	description:'configuration files directory'
     },
     'data-dir':{
 	type:'string',
 	short:'d',
+	description:'data files directory'
     },
     'ignore-last-status':{
-	type:'boolean'
+	type:'boolean',
+	description:'ignore the last status file on start up'
+    },
+    'help':{
+	type:'boolean',
+	short:'h',
+	description:'show this message and quit'
     }
 };
 
@@ -41,6 +85,9 @@ const OPTS=NODE_Util.parseArgs({
     args:ARGS,
     options:CMD_OPTIONS
 }).values;
+
+if(OPTS['help'])
+    usage(CMD_OPTIONS);
 
 const HOME=OPTS['config-dir']||require('os').homedir();
 const RC_PREFIX='.capw';
