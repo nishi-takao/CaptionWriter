@@ -18,7 +18,7 @@ const Util=require(Path.join(__dirname,'js','util'));
 const WINDOW_MIN_WIDTH=800;
 const WINDOW_MIN_HEIGHT=720;
 
-function usage(opts){
+function parse_arg(opts){
     const build_msg=(k,v)=>{
 	if(!v)
 	    return '';
@@ -35,25 +35,61 @@ function usage(opts){
 	return s;
     };
     
-    console.error('USAGE:');
-    let help=null;
-    for(const [k,v] of Object.entries(opts)){
-	let msg=build_msg(k,v);
-	if(k=='help')
-	    help=msg;
-	else
-	    console.error(msg);
-    }
-    console.error('\n');
-    if(help){
-	console.error(help);
-	console.error('\n');
+    const usage=(opts,exit_code=0)=>{
+	console.error(`${App.getName()} ${App.getVersion()}`)
+	console.error('');
+	console.error('Options:');
+	let help=null;
+	for(const [k,v] of Object.entries(opts)){
+	    let msg=build_msg(k,v);
+	    if(k=='help')
+		help=msg;
+	    else
+		console.error(msg);
+	}
+	console.error('');
+	if(help){
+	    console.error(help);
+	    console.error('');
+	}
+	
+	App.exit(exit_code);
+    };
+    
+    if(!opts['help']){
+	opts['help']={
+	    type:'boolean',
+	    short:'h',
+	    description:'show this message and quit'
+	}
     }
     
-    App.exit(-1);
+    const args=process.argv.slice(2);
+    
+    let obj=null;
+    try{
+	obj=NODE_Util.parseArgs({
+	    args:args,
+	    options:opts
+	});
+    }
+    catch(e){
+	if((e instanceof TypeError) &&
+	   e.code=='ERR_PARSE_ARGS_UNKNOWN_OPTION'){
+	    console.error(e.message);
+	    console.error('');
+	    usage(opts,-1);
+	}
+	else
+	    throw(e);
+    }
+    if(obj.values['help'])
+	usage(opts);
+    
+    return obj;
 }
 
-const CMD_OPTIONS={
+const OPTS=parse_arg({
     'config-file':{
 	type:'string',
 	short:'c',
@@ -73,21 +109,7 @@ const CMD_OPTIONS={
 	type:'boolean',
 	description:'ignore the last status file on start up'
     },
-    'help':{
-	type:'boolean',
-	short:'h',
-	description:'show this message and quit'
-    }
-};
-
-const ARGS=process.argv.slice(2);
-const OPTS=NODE_Util.parseArgs({
-    args:ARGS,
-    options:CMD_OPTIONS
 }).values;
-
-if(OPTS['help'])
-    usage(CMD_OPTIONS);
 
 const HOME=OPTS['config-dir']||require('os').homedir();
 const RC_PREFIX='.capw';
