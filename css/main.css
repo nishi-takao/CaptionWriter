@@ -91,8 +91,7 @@ html,body{
     overflow-x:auto;
     overflow-y:auto;
     position:relative;
-    scrollbar-color:#d0d0d0 #404050;
-    scrollbar-width:32px;
+    scrollbar-color:#c0c0c7 #404050;
 }
 #filer>ul{
     padding:0.75em 0;
@@ -302,8 +301,10 @@ html,body{
     font-size:14pt;
     color:#d0d0d0;
     -webkit-text-fill-color:#d0d0d0;;
-    scrollbar-color:#d0d0d0 #404050;
-    scrollbar-width:32px;
+    scrollbar-color:#c0c0c7 #404050;
+}
+*[disabled] #filelist{
+    scrollbar-color:#606070 #404050;
 }
 #filelist:focus,
 *[disabled] #filelist:focus{
