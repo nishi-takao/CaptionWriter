@@ -109,6 +109,10 @@ const OPTS=parse_arg({
 	type:'boolean',
 	description:'ignore the last status file on start up'
     },
+    'DEBUG':{
+	type:'boolean',
+	description:'turn on debug mode'
+    },
 }).values;
 
 const HOME=OPTS['config-dir']||require('os').homedir();
@@ -154,6 +158,9 @@ if(!(OPTS['ignore-last-status']||config.ignore_last_status)){
 
 if(OPTS['data-dir'])
     config.wd=OPTS['data-dir'];
+
+if(OPTS['DEBUG'])
+    config.DEBUG=true;
 
 const AUTHOR=require(Path.join(__dirname,'package.json')).author;
 const COPYRIGHT_YEAR='2024';
