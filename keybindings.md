@@ -10,8 +10,8 @@
 | &larr; | Shrink Folder |
 | \[Ctrl\] \- &uarr; | Goto Parent |
 | \[Ctrl\] \- &darr; | Goto 1st. Child |
-| \[Shift\] \- &rarr; | Goto Prev. Sibling |
-| \[Shift\] \- &larr; | Goto Next Sibling |
+| \[Shift\] \- &uarr; | Goto Prev. Sibling |
+| \[Shift\] \- &darr; | Goto Next Sibling |
 | \[SPC\] | Toggle Shrink/Expand |
 | \[Ctrl\] \- \[SPC\] or \[Ctrl\] \- r | Rescan |
 
