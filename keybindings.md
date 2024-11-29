@@ -42,7 +42,12 @@ When you press the alphabet or number keys, it will jump to the folder with the 
 | \[Ctrl\] \- &uarr; | Edit the image above on the list |
 | \[Ctrl\] \- &darr; | Edit the image below on the list |
 
+Of course, you can also use the general shortcut keys for textarea. (e.g. \[Ctrl\] \- c for copy, \[Ctrl\] \- v for paste, etc.)
+
 
 # Other
 
-Press \[Ctrl\] \- \[Shift\] \- l to lock/unlock the screen.
+Press \[Ctrl\] \- \[Shift\] \- l to lock/unlock the application.
+The lock function is not intended for security protection, but simply for enjoying the loading animation.
+
+In most OS, you can close the application by pressing \[Alt\] \- \[F4\].
