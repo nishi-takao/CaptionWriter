@@ -426,10 +426,10 @@ Writer.prototype._add_listeners=function()
 	`[\u2191]: List Up
 [\u2193]: List Down
 [\u2192] or [RET] or [TAB]: Start Editing
-[\u2190]: Select Folder
-[Shift+\u2190]: Rescan
+[\u2190]: Open Folder Tree
+[Shift-\u2190]: Rescan
 [Ctrl-c]: Copy the Existing Caption
-[Ctrl-Shft-c]: Clear the Copied Caption
+[Ctrl-Shift-c]: Clear the Copied Caption
 [Ctrl-DEL]: Dispose the Existing Caption`
     );
     

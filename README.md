@@ -47,6 +47,10 @@ The `*.caption` file is a UTF-8 text file.
 --ignore-last-status        :ignore the last status file on start up
 ```
 
+### Key bindings
+
+See [keybindings.md](keybindings.md)
+
 ## License
 
 BSD 2-Clause "Simplified" License
