@@ -578,8 +578,8 @@ Writer.prototype._add_listeners=function()
 [Ctrl-RET]: Commit
 [ESC]: Discard
 [TAB]: Exit Editing
-[Ctrl+\u2191]: Edit the image above on the list
-[Ctrl+\u2193]: Edit the image below on the list
+[Ctrl-\u2191]: Edit the image above on the list
+[Ctrl-\u2193]: Edit the image below on the list
 `
     );
     

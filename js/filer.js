@@ -599,7 +599,7 @@ Filer.prototype._add_event_listeners=function()
 	    this.cmd_rescan(obj);
 	}
     );
-    this._elm.btn.reload.addEventListener(
+    this._elm.btn.cancel.addEventListener(
 	'click',
 	(event)=>{
 	    if(this._is_loading())
@@ -757,7 +757,44 @@ Filer.prototype._buid_global_event_listners=function()
 	    opt:null
 	},
     ];
+
+    this._elm.tree_root.setAttribute(
+	'title',
+		`[\u2191]: List Up
+[\u2193]: List Down
+[\u2192]: Expand Folder
+[\u2190]: Shrink Folder
+[SPC]: Toggle Shrink/Expand
+[Ctrl-\u2191]: Goto Parent
+[Ctrl-\u2193]: Goto 1st. Child
+[Shift-\u2191]: Goto Prev. Sibling
+[Shift-\u2193]: Goto Next Sibling
+[Ctrl-SPC]: Rescan
+0-9a-zA-Z: Jump to the Folder with the Specified Initial Letter
+`
+    );
+
+    this._add_text_to_title(
+	this._elm.btn.open,
+	'RET'
+    );
+    this._add_text_to_title(
+	this._elm.btn.reload,
+	'Ctrl-r'
+    );
+    this._add_text_to_title(
+	this._elm.btn.cancel,
+	'ESC'
+    );
+
 }
+
+Filer.prototype._add_text_to_title=function(el,text)
+{
+    let title=(el.getAttribute('title')||'')+' ['+text+']';
+    el.setAttribute('title',title.trim());
+}
+
 Filer.prototype._is_loading=function()
 {
     return this._parent.screen_guard.is_active;
