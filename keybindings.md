@@ -3,6 +3,7 @@
 ## Folder Tree
 
 | Key | Description |
+|  :---: | :--- | 
 | &uarr; | List Up |
 | &darr; | List Down |
 | &rarr; | Expand Folder |
@@ -19,6 +20,7 @@ When you press the alphabet or number keys, it will jump to the folder with the 
 ## Image List
 
 | Key | Description |
+|  :---: | :--- | 
 | &uarr; | List Up |
 | &darr; | List Down |
 | &rarr; or \[RET\] or \[TAB\] | Start Editing |
@@ -32,6 +34,7 @@ When you press the alphabet or number keys, it will jump to the folder with the 
 # Text Area
 
 | Key | Description |
+|  :---: | :--- | 
 | \[Ctrl\] \- s | Commit and Keep Editing |
 | \[Ctrl\] \- \[RET\] | Commit |
 | \[ESC\] | Discard |
@@ -42,4 +45,4 @@ When you press the alphabet or number keys, it will jump to the folder with the 
 
 # Other
 
-Press [Ctrl] - [Shift] - l to lock/unlock the screen.
+Press \[Ctrl\] \- \[Shift\] \- l to lock/unlock the screen.
