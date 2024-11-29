@@ -24,14 +24,14 @@ When you press the alphabet or number keys, it will jump to the folder with the 
 | &uarr; | List Up |
 | &darr; | List Down |
 | &rarr; or \[RET\] or \[TAB\] | Start Editing |
-| &larr; | Show Folder Tree |
+| &larr; or \[ESC\] | Show Folder Tree |
 | \[Shift\] \- &larr; | Rescan |
 | \[Ctrl\] \- c | Copy the Existing Caption |
 | \[Ctrl\] \- \[Shift\] \- c | Clear the Copied Caption |
 | \[Ctrl\] \- \[DEL\] | Dispose the Existing Caption |
 
 
-# Text Area
+## Text Area
 
 | Key | Description |
 |  :---: | :--- | 
