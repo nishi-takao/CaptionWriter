@@ -19,7 +19,7 @@ For example, if you want to add captions to each image in `/some/where/images`, 
 $ ./run.sh /some/where/images
 ```
 
-When a configuration file is required,  `../config` directory with the file name `.capw`.
+When a configuration file is required,  [/config](../config/) directory with the file name `.capw`.
 A last status file is also generated in the same directory.
 
 Both the config and data directories must be readable and writable by the current executing user.
