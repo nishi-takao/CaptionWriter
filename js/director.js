@@ -542,7 +542,7 @@ Director.prototype.open_dir=function(dir,is_preview=false)
 	
 	if(is_preview)
 	    this._writer._preview(result);
-	else
+	else if(!(is_preview===null))
 	    this._writer._rendering(result,false,true);
 	
 	return Promise.resolve(result);

@@ -36,7 +36,7 @@ When you press the alphabet or number keys, it will jump to the folder with the 
 | Key | Description |
 |  :---: | :--- | 
 | \[Ctrl\] \- s | Commit and Keep Editing |
-| \[Ctrl\] \- \[RET\] | Commit |
+| \[Ctrl\] \- \[RET\] | Commit and Exit Editing |
 | \[ESC\] | Discard |
 | \[TAB\] | Exit Editing |
 | \[Ctrl\] \- &uarr; | Edit the image above on the list |

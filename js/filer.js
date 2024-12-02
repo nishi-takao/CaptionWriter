@@ -432,9 +432,13 @@ Filer.prototype.cmd_goto_parent=function(target)
 }
 Filer.prototype.cmd_goto_prev_sibling=function(target)
 {
-    let obj=TreeNode.node_dic[target._element.previousSibling?.dataset?.path];
-    if(obj)
-	this.cmd_set_cwd(obj,target);
+    this._expand_parent(target).then((p)=>{
+	let obj=TreeNode.node_dic[target._element.previousSibling?.dataset?.path];
+	if(obj)
+	    this.cmd_set_cwd(obj,target);
+	else
+	    this.cmd_set_cwd(target);
+    });
 }
 
 Filer.prototype.cmd_down=function(target)
@@ -465,9 +469,13 @@ Filer.prototype.cmd_goto_child=function(target)
 }
 Filer.prototype.cmd_goto_next_sibling=function(target)
 {
-    let obj=TreeNode.node_dic[target._element.nextSibling?.dataset?.path];
-    if(obj)
-	this.cmd_set_cwd(obj,target);
+    this._expand_parent(target).then((p)=>{
+	let obj=TreeNode.node_dic[target._element.nextSibling?.dataset?.path];
+	if(obj)
+	    this.cmd_set_cwd(obj,target);
+	else
+	    this.cmd_set_cwd(target);
+    });
 }
 
 Filer.prototype.cmd_move_to=function(target,key){
@@ -817,4 +825,22 @@ Filer.prototype._get_displayed_items=function(c=null)
     }
 
     return buf;
+}
+
+Filer.prototype._expand_parent=function(target)
+{
+    if(target._parent && !target.is_drive){
+	let p;
+ 	if(target._parent.is_fixed)
+	    p=Promise.resolve(target);
+	else
+	    p=this._parent.open_dir(target._parent.path,null);
+	  
+	return p.then((q)=>{
+	    target._parent.expand();
+	    return target;
+	});
+    }
+    else
+	return Promise.resolve(target);
 }
