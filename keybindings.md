@@ -45,7 +45,7 @@ When you press the alphabet or number keys, it will jump to the folder with the 
 Of course, you can also use the general shortcut keys for textarea. (e.g. \[Ctrl\] \- c for copy, \[Ctrl\] \- v for paste, etc.)
 
 
-# Other
+## Other
 
 Press \[Ctrl\] \- \[Shift\] \- l to lock/unlock the application.
 The lock function is not intended for security protection, but simply for enjoying the loading animation.
